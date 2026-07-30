@@ -118,11 +118,12 @@ function applyInviteLink() {
 function pasteInviteLink() {
   const val = (document.getElementById('paste-invite-input').value || '').trim()
   if (!val) { showToast('請貼上邀請連結'); return }
+  // 用 regex 抓 c= 參數，避免 URLSearchParams 把 + 轉成空格導致 base64 損毀
+  const match = /[?&]c=([^&\s#]*)/.exec(val)
+  if (!match) { showToast('連結格式不對，找不到 ?c= 參數'); return }
   try {
-    const url = new URL(val)
-    const c = new URLSearchParams(url.search).get('c')
-    if (!c) { showToast('連結格式不對，找不到參數 c'); return }
-    const data = JSON.parse(atob(decodeURIComponent(c)))
+    const c = decodeURIComponent(match[1])
+    const data = JSON.parse(atob(c))
     if (!data.k || !data.p || !data.t) { showToast('連結缺少必要資訊'); return }
     settings.firebaseConfig = { apiKey: data.k, projectId: data.p }
     settings.tripId = data.t
@@ -133,8 +134,8 @@ function pasteInviteLink() {
     document.getElementById('paste-invite-input').value = ''
     showToast('設定已套用，正在連接…')
     connectFirebase()
-  } catch {
-    showToast('連結格式不對')
+  } catch (e) {
+    showToast('解析失敗：' + e.message)
   }
 }
 
