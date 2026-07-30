@@ -228,8 +228,6 @@ function _renderChipBar(barId, labelId, items, activeSet, toggleFn) {
 function renderStatsPayerBar() {
   const payers = [...new Set(expenses.map(e => e.payer).filter(Boolean))]
   _renderChipBar('stats-payer-bar', null, payers, statsPayerFilter, 'toggleStatsPayer')
-  const bar = document.getElementById('stats-payer-bar')
-  if (bar) bar.style.display = payers.length ? '' : 'none'
 }
 
 function renderStatsCardBar() {
@@ -283,11 +281,6 @@ function clearStatsFilter() {
   renderStatsPayerBar()
   renderStatsCardBar()
   renderStatsPaymentBar()
-  renderStatsFiltered()
-}
-
-// ── Totals ────────────────────────────────────────────────────────
-function renderTotals() {
   renderStatsFiltered()
 }
 
@@ -614,7 +607,7 @@ function switchChart(type) {
   activeChartType = type
   document.getElementById('btn-donut').classList.toggle('active', type === 'donut')
   document.getElementById('btn-bar').classList.toggle('active', type === 'bar')
-  renderStats()
+  renderStatsFiltered()
 }
 
 function toggleCatDetail(id) {
