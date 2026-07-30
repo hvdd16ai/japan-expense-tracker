@@ -1258,14 +1258,15 @@ function exportCSV() {
 // ── Misc ──────────────────────────────────────────────────────────
 function forceUpdate() {
   showToast('更新中…')
+  const bust = () => { location.href = location.pathname + '?_=' + Date.now() }
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.getRegistrations()
       .then(regs => Promise.all(regs.map(r => r.unregister())))
       .then(() => caches.keys())
       .then(keys => Promise.all(keys.map(k => caches.delete(k))))
-      .then(() => location.reload(true))
+      .then(bust)
   } else {
-    location.reload(true)
+    bust()
   }
 }
 
