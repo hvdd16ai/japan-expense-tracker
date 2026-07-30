@@ -191,20 +191,18 @@ function switchTab(tab) {
   document.querySelectorAll('.tab-item').forEach(el => el.classList.remove('active'))
   document.getElementById('tab-' + tab).classList.remove('hidden')
   document.querySelector(`.tab-item[data-tab="${tab}"]`).classList.add('active')
-  if (tab === 'stats') { renderStatsPayerBar(); renderStatsFiltered() }
+  if (tab === 'stats') { renderStatsPayerBar(); renderStatsCardBar(); renderStatsFiltered() }
   if (tab === 'settings') renderSettings()
 }
 
 // ── Stats filter state ────────────────────────────────────────────
-let statsPayerFilter = null
+let statsPayerFilter = new Set()
+let statsCardFilter  = new Set()
 
 function getStatsExpenses() {
-  const from = document.getElementById('stats-date-from')?.value
-  const to   = document.getElementById('stats-date-to')?.value
   return expenses.filter(e => {
-    if (from && e.date < from) return false
-    if (to   && e.date > to)   return false
-    if (statsPayerFilter && e.payer !== statsPayerFilter) return false
+    if (statsPayerFilter.size > 0 && !statsPayerFilter.has(e.payer)) return false
+    if (statsCardFilter.size  > 0 && !statsCardFilter.has(e.card || '')) return false
     return true
   })
 }
@@ -212,17 +210,41 @@ function getStatsExpenses() {
 function renderStatsPayerBar() {
   const bar = document.getElementById('stats-payer-bar')
   if (!bar) return
-  const payers = ['全部', ...new Set(expenses.map(e => e.payer).filter(Boolean))]
+  const payers = [...new Set(expenses.map(e => e.payer).filter(Boolean))]
   bar.innerHTML = payers.map(p => {
-    const val = p === '全部' ? null : p
-    const active = statsPayerFilter === val ? ' active' : ''
-    return `<button class="cat-filter-btn${active}" onclick="setStatsPayer(${val === null ? 'null' : `'${p}'`})">${p}</button>`
+    const active = statsPayerFilter.has(p) ? ' active' : ''
+    return `<button class="cat-filter-btn stats-chip${active}" onclick="toggleStatsPayer(${JSON.stringify(p)})">${esc(p)}</button>`
   }).join('')
 }
 
-function setStatsPayer(payer) {
-  statsPayerFilter = payer
+function renderStatsCardBar() {
+  const bar   = document.getElementById('stats-card-bar')
+  const label = document.getElementById('stats-card-label')
+  if (!bar) return
+  const cards = [...new Set(expenses.filter(e => e.card).map(e => e.card))]
+  if (cards.length === 0) {
+    bar.innerHTML = ''
+    if (label) label.style.display = 'none'
+    return
+  }
+  if (label) label.style.display = ''
+  bar.innerHTML = cards.map(c => {
+    const active = statsCardFilter.has(c) ? ' active' : ''
+    return `<button class="cat-filter-btn stats-chip${active}" onclick="toggleStatsCard(${JSON.stringify(c)})">${esc(c)}</button>`
+  }).join('')
+}
+
+function toggleStatsPayer(payer) {
+  if (statsPayerFilter.has(payer)) statsPayerFilter.delete(payer)
+  else statsPayerFilter.add(payer)
   renderStatsPayerBar()
+  renderStatsFiltered()
+}
+
+function toggleStatsCard(card) {
+  if (statsCardFilter.has(card)) statsCardFilter.delete(card)
+  else statsCardFilter.add(card)
+  renderStatsCardBar()
   renderStatsFiltered()
 }
 
@@ -237,12 +259,10 @@ function renderStatsFiltered() {
 }
 
 function clearStatsFilter() {
-  statsPayerFilter = null
-  const f = document.getElementById('stats-date-from')
-  const t = document.getElementById('stats-date-to')
-  if (f) f.value = ''
-  if (t) t.value = ''
+  statsPayerFilter = new Set()
+  statsCardFilter  = new Set()
   renderStatsPayerBar()
+  renderStatsCardBar()
   renderStatsFiltered()
 }
 
