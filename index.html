@@ -147,7 +147,14 @@
         <div id="invite-btn-wrap" style="display:none;padding:8px 0 0">
           <button class="btn-sm" onclick="generateInviteLink()" style="width:100%;padding:10px;background:rgba(52,199,89,0.12);color:var(--ok);border-radius:var(--radius-sm);font-size:14px;font-weight:600">🔗 複製邀請連結給旅伴</button>
         </div>
-        <div class="settings-hint">旅伴點連結即可自動連接，不需手動輸入設定</div>
+        <div class="settings-hint">連接後複製邀請連結傳給旅伴，旅伴貼上連結即可自動套用設定</div>
+        <div style="padding:8px 0 0">
+          <div style="font-size:12px;color:var(--text2);margin-bottom:6px">收到邀請連結？貼在這裡：</div>
+          <div style="display:flex;gap:8px">
+            <input type="text" id="paste-invite-input" class="settings-input" placeholder="https://...?c=..." style="flex:1;font-size:13px">
+            <button class="btn-sm" onclick="pasteInviteLink()" style="color:var(--accent);white-space:nowrap;padding:0 12px">套用</button>
+          </div>
+        </div>
       </div>
 
       <div class="settings-group">
@@ -301,13 +308,14 @@
     <div class="modal-body" id="scan-body">
       <!-- Step 1: Select photo -->
       <div id="scan-step-1" class="scan-step">
-        <input type="file" id="scan-file" accept="image/*" capture="environment" style="display:none" onchange="onFileSelected(event)">
+        <input type="file" id="scan-file" accept="image/*" multiple style="display:none" onchange="onFileSelected(event)">
         <div class="scan-photo-area" onclick="document.getElementById('scan-file').click()">
           <span class="scan-icon">🧾</span>
           <span class="scan-photo-label">選擇收據照片</span>
-          <span class="scan-photo-hint">點擊拍照或從相簿選取</span>
+          <span class="scan-photo-hint">可選多張（長收據分段拍）</span>
         </div>
-        <img id="scan-preview" alt="預覽">
+        <div id="scan-preview-wrap" class="scan-preview-wrap" style="display:none"></div>
+        <div id="scan-count" class="scan-count-badge"></div>
         <button id="btn-scan-go" class="btn-scan-start" onclick="runScan()" disabled>
           <span>✨</span> 開始辨識
         </button>

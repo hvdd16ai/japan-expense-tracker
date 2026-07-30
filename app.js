@@ -13,7 +13,7 @@ const PMETHODS = ['現金', '信用卡', 'Suica（IC卡）', 'PayPay', '全支�
 let expenses = []
 let settings = { exchangeRate: 0.22, geminiApiKey: '', payers: ['我', 'yh', 'carol'], cards: ['富邦J', '永豐大戶', '星展'], firebaseConfig: { apiKey: '', projectId: '' }, tripId: '' }
 let editingId = null
-let scanFile = null
+let scanFiles = []
 let scanResult = null
 let db = null
 let fsUnsubscribe = null
@@ -113,6 +113,29 @@ function applyInviteLink() {
     history.replaceState(null, '', location.pathname)
     showToast('已從邀請連結自動連接！')
   } catch {}
+}
+
+function pasteInviteLink() {
+  const val = (document.getElementById('paste-invite-input').value || '').trim()
+  if (!val) { showToast('請貼上邀請連結'); return }
+  try {
+    const url = new URL(val)
+    const c = new URLSearchParams(url.search).get('c')
+    if (!c) { showToast('連結格式不對，找不到參數 c'); return }
+    const data = JSON.parse(atob(decodeURIComponent(c)))
+    if (!data.k || !data.p || !data.t) { showToast('連結缺少必要資訊'); return }
+    settings.firebaseConfig = { apiKey: data.k, projectId: data.p }
+    settings.tripId = data.t
+    save()
+    document.getElementById('setting-fbkey').value = data.k
+    document.getElementById('setting-fbproject').value = data.p
+    document.getElementById('setting-tripid').value = data.t
+    document.getElementById('paste-invite-input').value = ''
+    showToast('設定已套用，正在連接…')
+    connectFirebase()
+  } catch {
+    showToast('連結格式不對')
+  }
 }
 
 function initFirebase() {
@@ -978,12 +1001,14 @@ function openScanModal() {
 }
 
 function resetScan() {
-  scanFile = null
+  scanFiles = []
   scanResult = null
-  const preview = document.getElementById('scan-preview')
-  if (preview.src && preview.src.startsWith('blob:')) URL.revokeObjectURL(preview.src)
+  const wrap = document.getElementById('scan-preview-wrap')
+  wrap.querySelectorAll('img').forEach(img => { if (img.src.startsWith('blob:')) URL.revokeObjectURL(img.src) })
+  wrap.innerHTML = ''
+  wrap.style.display = 'none'
+  document.getElementById('scan-count').textContent = ''
   document.getElementById('scan-file').value = ''
-  preview.style.display = 'none'
   document.getElementById('btn-scan-go').disabled = true
   showScanStep(1)
 }
@@ -996,21 +1021,29 @@ function showScanStep(n) {
 }
 
 function onFileSelected(e) {
-  const file = e.target.files[0]
-  if (!file) return
-  scanFile = file
-  const preview = document.getElementById('scan-preview')
-  preview.src = URL.createObjectURL(file)
-  preview.style.display = 'block'
+  const files = [...e.target.files]
+  if (!files.length) return
+  scanFiles = files
+  const wrap = document.getElementById('scan-preview-wrap')
+  wrap.querySelectorAll('img').forEach(img => { if (img.src.startsWith('blob:')) URL.revokeObjectURL(img.src) })
+  wrap.innerHTML = ''
+  files.forEach(f => {
+    const img = document.createElement('img')
+    img.src = URL.createObjectURL(f)
+    img.className = 'scan-preview-thumb'
+    wrap.appendChild(img)
+  })
+  wrap.style.display = 'flex'
+  document.getElementById('scan-count').textContent = files.length > 1 ? `已選 ${files.length} 張` : ''
   document.getElementById('btn-scan-go').disabled = false
 }
 
 async function runScan() {
-  if (!scanFile) return
+  if (!scanFiles.length) return
   showScanStep(2)
   try {
-    const base64 = await fileToBase64(scanFile)
-    const result = await callGemini(base64)
+    const base64Array = await Promise.all(scanFiles.map(fileToBase64))
+    const result = await callGemini(base64Array)
     scanResult = result
     renderScanReview(result)
     showScanStep(3)
@@ -1042,9 +1075,10 @@ function fileToBase64(file) {
   })
 }
 
-async function callGemini(base64) {
+async function callGemini(base64Array) {
   const key = settings.geminiApiKey
-  const prompt = `這是日本收據照片，請盡力提取所有資訊。
+  const multi = base64Array.length > 1
+  const prompt = `這是日本收據照片${multi ? `（共 ${base64Array.length} 張，為同一張收據的不同部分，請合併所有照片的資訊一起辨識）` : ''}，請盡力提取所有資訊。
 規則：
 - 能辨識的資訊請認真判斷填入；完全無法確定的欄位請留空（"" 或 [] 或 0），不要猜測
 - 商店名稱通常在收據最上方
@@ -1067,16 +1101,15 @@ category 判斷規則（每筆商品獨立判斷，同一張收據可以有不�
 - 娛樂：門票、遊樂園、電影、表演、溫泉、觀光景點
 - 其他：以上無法明確歸類的項目`
 
+  const imageParts = base64Array.map(b64 => ({ inlineData: { mimeType: 'image/jpeg', data: b64 } }))
+
   const res = await fetch(
     `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent?key=${key}`,
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        contents: [{ parts: [
-          { text: prompt },
-          { inlineData: { mimeType: 'image/jpeg', data: base64 } }
-        ]}]
+        contents: [{ parts: [{ text: prompt }, ...imageParts] }]
       })
     }
   )
