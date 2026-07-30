@@ -84,7 +84,7 @@ function generateInviteLink() {
     showToast('請先連接 Firebase')
     return
   }
-  const encoded = btoa(JSON.stringify({ k: cfg.apiKey, p: cfg.projectId, t: settings.tripId }))
+  const encoded = encodeURIComponent(btoa(JSON.stringify({ k: cfg.apiKey, p: cfg.projectId, t: settings.tripId })))
   const url = location.origin + location.pathname + '?c=' + encoded
   if (navigator.share) {
     navigator.share({ title: '旅遊記帳', text: '點連結加入共同記帳', url })
