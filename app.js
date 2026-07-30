@@ -1188,7 +1188,9 @@ function exportCSV() {
 
 // ── Misc ──────────────────────────────────────────────────────────
 function confirmClear() {
-  if (!confirm('確定要清除所有記帳資料？此操作無法復原。')) return
+  const pwd = prompt('請輸入密碼以清除所有資料：')
+  if (pwd === null) return
+  if (pwd !== '594677') { showToast('密碼錯誤'); return }
   if (isFirebaseReady()) {
     fsClearAll().then(() => showToast('已清除'))
   } else {
