@@ -1256,6 +1256,19 @@ function exportCSV() {
 }
 
 // ── Misc ──────────────────────────────────────────────────────────
+function forceUpdate() {
+  showToast('更新中…')
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.getRegistrations()
+      .then(regs => Promise.all(regs.map(r => r.unregister())))
+      .then(() => caches.keys())
+      .then(keys => Promise.all(keys.map(k => caches.delete(k))))
+      .then(() => location.reload(true))
+  } else {
+    location.reload(true)
+  }
+}
+
 function confirmResetAll() {
   const pwd = prompt('重置後所有資料和設定都會清除，請輸入密碼確認：')
   if (pwd === null) return
@@ -1263,7 +1276,15 @@ function confirmResetAll() {
   if (fsUnsubscribe) { fsUnsubscribe(); fsUnsubscribe = null }
   db = null
   localStorage.clear()
-  location.reload()
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.getRegistrations()
+      .then(regs => Promise.all(regs.map(r => r.unregister())))
+      .then(() => caches.keys())
+      .then(keys => Promise.all(keys.map(k => caches.delete(k))))
+      .then(() => location.reload(true))
+  } else {
+    location.reload(true)
+  }
 }
 
 function confirmClear() {
