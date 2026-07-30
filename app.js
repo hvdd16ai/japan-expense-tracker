@@ -1256,6 +1256,16 @@ function exportCSV() {
 }
 
 // ── Misc ──────────────────────────────────────────────────────────
+function confirmResetAll() {
+  const pwd = prompt('重置後所有資料和設定都會清除，請輸入密碼確認：')
+  if (pwd === null) return
+  if (pwd !== '594677') { showToast('密碼錯誤'); return }
+  if (fsUnsubscribe) { fsUnsubscribe(); fsUnsubscribe = null }
+  db = null
+  localStorage.clear()
+  location.reload()
+}
+
 function confirmClear() {
   const pwd = prompt('請輸入密碼以清除所有資料：')
   if (pwd === null) return
