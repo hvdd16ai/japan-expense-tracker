@@ -11,7 +11,7 @@ const PMETHODS = ['現金', '信用卡', 'Suica（IC卡）', 'PayPay', '全支�
 
 // ── State ────────────────────────────────────────────────────────
 let expenses = []
-let settings = { exchangeRate: 0.22, geminiApiKey: '', payers: ['我'], cards: [], firebaseConfig: { apiKey: '', projectId: '' }, tripId: '' }
+let settings = { exchangeRate: 0.22, geminiApiKey: '', payers: ['我', 'yh', 'carol'], cards: ['富邦J', '永豐大戶', '星展'], firebaseConfig: { apiKey: '', projectId: '' }, tripId: '' }
 let editingId = null
 let scanFile = null
 let scanResult = null
@@ -172,18 +172,64 @@ function switchTab(tab) {
   document.querySelectorAll('.tab-item').forEach(el => el.classList.remove('active'))
   document.getElementById('tab-' + tab).classList.remove('hidden')
   document.querySelector(`.tab-item[data-tab="${tab}"]`).classList.add('active')
-  if (tab === 'stats') { renderTotals(); renderStats() }
+  if (tab === 'stats') { renderStatsPayerBar(); renderStatsFiltered() }
   if (tab === 'settings') renderSettings()
+}
+
+// ── Stats filter state ────────────────────────────────────────────
+let statsPayerFilter = null
+
+function getStatsExpenses() {
+  const from = document.getElementById('stats-date-from')?.value
+  const to   = document.getElementById('stats-date-to')?.value
+  return expenses.filter(e => {
+    if (from && e.date < from) return false
+    if (to   && e.date > to)   return false
+    if (statsPayerFilter && e.payer !== statsPayerFilter) return false
+    return true
+  })
+}
+
+function renderStatsPayerBar() {
+  const bar = document.getElementById('stats-payer-bar')
+  if (!bar) return
+  const payers = ['全部', ...new Set(expenses.map(e => e.payer).filter(Boolean))]
+  bar.innerHTML = payers.map(p => {
+    const val = p === '全部' ? null : p
+    const active = statsPayerFilter === val ? ' active' : ''
+    return `<button class="cat-filter-btn${active}" onclick="setStatsPayer(${val === null ? 'null' : `'${p}'`})">${p}</button>`
+  }).join('')
+}
+
+function setStatsPayer(payer) {
+  statsPayerFilter = payer
+  renderStatsPayerBar()
+  renderStatsFiltered()
+}
+
+function renderStatsFiltered() {
+  const filtered = getStatsExpenses()
+  const totalJPY = filtered.reduce((s, e) => s + (e.totalAmount || 0), 0)
+  const jEl = document.getElementById('total-jpy')
+  const tEl = document.getElementById('total-twd')
+  if (jEl) jEl.textContent = fmt(totalJPY)
+  if (tEl) tEl.textContent = fmtTWD(totalJPY)
+  renderStats(filtered)
+}
+
+function clearStatsFilter() {
+  statsPayerFilter = null
+  const f = document.getElementById('stats-date-from')
+  const t = document.getElementById('stats-date-to')
+  if (f) f.value = ''
+  if (t) t.value = ''
+  renderStatsPayerBar()
+  renderStatsFiltered()
 }
 
 // ── Totals ────────────────────────────────────────────────────────
 function renderTotals() {
-  const totalJPY = expenses.reduce((s, e) => s + (e.totalAmount || 0), 0)
-  const jEl = document.getElementById('total-jpy')
-  const tEl = document.getElementById('total-twd')
-  const mEl = document.getElementById('total-meta')
-  if (jEl) jEl.textContent = fmt(totalJPY)
-  if (tEl) tEl.textContent = fmtTWD(totalJPY)
+  renderStatsFiltered()
 }
 
 // ── Render: Expense list ─────────────────────────────────────────
@@ -376,9 +422,10 @@ function deleteExpense(id) {
 let donutChart = null, barChart = null
 let activeChartType = 'donut'
 
-function renderStats() {
+function renderStats(data) {
+  const src = data || expenses
   const legend = document.getElementById('stats-legend')
-  if (expenses.length === 0) {
+  if (src.length === 0) {
     if (donutChart) { donutChart.destroy(); donutChart = null }
     if (barChart) { barChart.destroy(); barChart = null }
     legend.innerHTML = '<div class="empty-state"><span class="empty-icon">📊</span><span class="empty-text">尚無資料</span></div>'
@@ -387,7 +434,7 @@ function renderStats() {
 
   const totals = {}
   const catRows = {} // category -> [{date, storeName, name, price}]
-  for (const exp of expenses) {
+  for (const exp of src) {
     const expItems = exp.items || []
     const itemSum = expItems.reduce((s, it) => s + itemTotal(it), 0)
     for (const it of expItems) {
@@ -909,7 +956,7 @@ category 判斷規則（每筆商品獨立判斷，同一張收據可以有不�
 - 其他：以上無法明確歸類的項目`
 
   const res = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${key}`,
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent?key=${key}`,
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

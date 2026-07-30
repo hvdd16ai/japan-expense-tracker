@@ -81,6 +81,18 @@ input, select, textarea { font-family: var(--font); }
 .btn-icon-scan { background: var(--surface); font-size: 17px; }
 
 /* ── Summary bar ─────────────────────────────────────────────── */
+.stats-filter-wrap { background: var(--bg); padding: 8px 0 0; }
+.stats-filter-row { display: flex; align-items: center; gap: 8px; padding: 0 16px 8px; }
+.stats-date-input {
+  flex: 1; background: var(--card); border: none; border-radius: var(--radius-sm);
+  padding: 8px 10px; font-size: 13px; color: var(--text); min-width: 0;
+}
+.stats-date-sep { font-size: 13px; color: var(--text2); flex-shrink: 0; }
+.stats-filter-clear {
+  font-size: 12px; color: var(--accent); padding: 6px 10px;
+  background: var(--card); border-radius: var(--radius-sm); flex-shrink: 0; white-space: nowrap;
+}
+
 .summary-bar {
   display: flex; align-items: center;
   background: var(--card); margin: 0 16px 12px;

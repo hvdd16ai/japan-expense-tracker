@@ -40,6 +40,15 @@
   <!-- ─── Tab: 統計 ──────────────────────────────────────────── -->
   <div class="tab-content hidden" id="tab-stats">
     <header class="page-header"><h1>統計</h1></header>
+    <div class="stats-filter-wrap">
+      <div class="stats-filter-row">
+        <input type="date" id="stats-date-from" class="stats-date-input" onchange="renderStatsFiltered()">
+        <span class="stats-date-sep">—</span>
+        <input type="date" id="stats-date-to" class="stats-date-input" onchange="renderStatsFiltered()">
+        <button class="stats-filter-clear" onclick="clearStatsFilter()">重設</button>
+      </div>
+      <div class="cat-filter-bar" id="stats-payer-bar"></div>
+    </div>
     <div class="summary-bar">
       <div class="summary-item">
         <span class="summary-label">日幣合計</span>
