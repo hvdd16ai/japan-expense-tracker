@@ -74,6 +74,39 @@ function isFirebaseReady() {
 function updateFirebaseStatus(msg) {
   const el = document.getElementById('firebase-status')
   if (el) el.textContent = msg
+  const inviteWrap = document.getElementById('invite-btn-wrap')
+  if (inviteWrap) inviteWrap.style.display = isFirebaseReady() ? '' : 'none'
+}
+
+function generateInviteLink() {
+  const cfg = settings.firebaseConfig || {}
+  if (!cfg.apiKey || !cfg.projectId || !settings.tripId) {
+    showToast('請先連接 Firebase')
+    return
+  }
+  const encoded = btoa(JSON.stringify({ k: cfg.apiKey, p: cfg.projectId, t: settings.tripId }))
+  const url = location.origin + location.pathname + '?c=' + encoded
+  if (navigator.share) {
+    navigator.share({ title: '旅遊記帳', text: '點連結加入共同記帳', url })
+  } else {
+    navigator.clipboard.writeText(url)
+      .then(() => showToast('邀請連結已複製！'))
+      .catch(() => prompt('複製此連結給旅伴：', url))
+  }
+}
+
+function applyInviteLink() {
+  const c = new URLSearchParams(location.search).get('c')
+  if (!c) return
+  try {
+    const data = JSON.parse(atob(c))
+    if (!data.k || !data.p || !data.t) return
+    settings.firebaseConfig = { apiKey: data.k, projectId: data.p }
+    settings.tripId = data.t
+    save()
+    history.replaceState(null, '', location.pathname)
+    showToast('已從邀請連結自動連接！')
+  } catch {}
 }
 
 function initFirebase() {
@@ -1344,6 +1377,7 @@ function loadSampleData() {
 // ── Init ──────────────────────────────────────────────────────────
 function init() {
   load()
+  applyInviteLink()
   const fbCfg = settings.firebaseConfig || {}
   const hasFirebase = fbCfg.apiKey && fbCfg.projectId && settings.tripId
   if (!hasFirebase && expenses.length === 0) loadSampleData()
