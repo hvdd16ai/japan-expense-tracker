@@ -243,21 +243,18 @@ function renderStatsPaymentBar() {
 function toggleStatsPayer(payer) {
   if (statsPayerFilter.has(payer)) statsPayerFilter.delete(payer)
   else statsPayerFilter.add(payer)
-  renderStatsPayerBar()
   renderStatsFiltered()
 }
 
 function toggleStatsCard(card) {
   if (statsCardFilter.has(card)) statsCardFilter.delete(card)
   else statsCardFilter.add(card)
-  renderStatsCardBar()
   renderStatsFiltered()
 }
 
 function toggleStatsPayment(method) {
   if (statsPaymentFilter.has(method)) statsPaymentFilter.delete(method)
   else statsPaymentFilter.add(method)
-  renderStatsPaymentBar()
   renderStatsFiltered()
 }
 
@@ -278,9 +275,6 @@ function clearStatsFilter() {
   statsPayerFilter   = new Set()
   statsCardFilter    = new Set()
   statsPaymentFilter = new Set()
-  renderStatsPayerBar()
-  renderStatsCardBar()
-  renderStatsPaymentBar()
   renderStatsFiltered()
 }
 
@@ -415,9 +409,12 @@ function renderExpenses() {
   }
 
   if (filtered.length === 0) {
-    list.innerHTML = keyword
-      ? '<div class="empty-state"><span class="empty-icon">🔍</span><span class="empty-text">找不到「' + esc(keyword) + '」的相關費用</span></div>'
-      : '<div class="empty-state"><span class="empty-icon">🏯</span><span class="empty-text">尚無費用記錄<br>點「＋」手動新增或掃描收據</span></div>'
+    let msg
+    if (keyword) msg = '找不到「' + esc(keyword) + '」的相關費用'
+    else if (activeCatFilter) msg = '沒有「' + activeCatFilter + '」分類的費用'
+    else msg = '尚無費用記錄<br>點「＋」手動新增或掃描收據'
+    const icon = (keyword || activeCatFilter) ? '🔍' : '🏯'
+    list.innerHTML = '<div class="empty-state"><span class="empty-icon">' + icon + '</span><span class="empty-text">' + msg + '</span></div>'
     return
   }
 
