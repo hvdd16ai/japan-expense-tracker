@@ -191,47 +191,55 @@ function switchTab(tab) {
   document.querySelectorAll('.tab-item').forEach(el => el.classList.remove('active'))
   document.getElementById('tab-' + tab).classList.remove('hidden')
   document.querySelector(`.tab-item[data-tab="${tab}"]`).classList.add('active')
-  if (tab === 'stats') { renderStatsPayerBar(); renderStatsCardBar(); renderStatsFiltered() }
+  if (tab === 'stats') renderStatsFiltered()
   if (tab === 'settings') renderSettings()
 }
 
 // ── Stats filter state ────────────────────────────────────────────
-let statsPayerFilter = new Set()
-let statsCardFilter  = new Set()
+let statsPayerFilter   = new Set()
+let statsCardFilter    = new Set()
+let statsPaymentFilter = new Set()
 
 function getStatsExpenses() {
   return expenses.filter(e => {
-    if (statsPayerFilter.size > 0 && !statsPayerFilter.has(e.payer)) return false
-    if (statsCardFilter.size  > 0 && !statsCardFilter.has(e.card || '')) return false
+    if (statsPayerFilter.size   > 0 && !statsPayerFilter.has(e.payer)) return false
+    if (statsCardFilter.size    > 0 && !statsCardFilter.has(e.card || '')) return false
+    if (statsPaymentFilter.size > 0 && !statsPaymentFilter.has(e.paymentMethod)) return false
     return true
   })
 }
 
-function renderStatsPayerBar() {
-  const bar = document.getElementById('stats-payer-bar')
+function _renderChipBar(barId, labelId, items, activeSet, toggleFn) {
+  const bar   = document.getElementById(barId)
+  const label = document.getElementById(labelId)
   if (!bar) return
-  const payers = [...new Set(expenses.map(e => e.payer).filter(Boolean))]
-  bar.innerHTML = payers.map(p => {
-    const active = statsPayerFilter.has(p) ? ' active' : ''
-    return `<button class="cat-filter-btn stats-chip${active}" onclick="toggleStatsPayer(${JSON.stringify(p)})">${esc(p)}</button>`
-  }).join('')
-}
-
-function renderStatsCardBar() {
-  const bar   = document.getElementById('stats-card-bar')
-  const label = document.getElementById('stats-card-label')
-  if (!bar) return
-  const cards = [...new Set(expenses.filter(e => e.card).map(e => e.card))]
-  if (cards.length === 0) {
+  if (items.length === 0) {
     bar.innerHTML = ''
     if (label) label.style.display = 'none'
     return
   }
   if (label) label.style.display = ''
-  bar.innerHTML = cards.map(c => {
-    const active = statsCardFilter.has(c) ? ' active' : ''
-    return `<button class="cat-filter-btn stats-chip${active}" onclick="toggleStatsCard(${JSON.stringify(c)})">${esc(c)}</button>`
+  bar.innerHTML = items.map(v => {
+    const active = activeSet.has(v) ? ' active' : ''
+    return `<button class="cat-filter-btn stats-chip${active}" onclick="${toggleFn}(${JSON.stringify(v)})">${esc(v)}</button>`
   }).join('')
+}
+
+function renderStatsPayerBar() {
+  const payers = [...new Set(expenses.map(e => e.payer).filter(Boolean))]
+  _renderChipBar('stats-payer-bar', null, payers, statsPayerFilter, 'toggleStatsPayer')
+  const bar = document.getElementById('stats-payer-bar')
+  if (bar) bar.style.display = payers.length ? '' : 'none'
+}
+
+function renderStatsCardBar() {
+  const cards = [...new Set(expenses.filter(e => e.card).map(e => e.card))]
+  _renderChipBar('stats-card-bar', 'stats-card-label', cards, statsCardFilter, 'toggleStatsCard')
+}
+
+function renderStatsPaymentBar() {
+  const methods = [...new Set(expenses.map(e => e.paymentMethod).filter(Boolean))]
+  _renderChipBar('stats-payment-bar', 'stats-payment-label', methods, statsPaymentFilter, 'toggleStatsPayment')
 }
 
 function toggleStatsPayer(payer) {
@@ -248,7 +256,17 @@ function toggleStatsCard(card) {
   renderStatsFiltered()
 }
 
+function toggleStatsPayment(method) {
+  if (statsPaymentFilter.has(method)) statsPaymentFilter.delete(method)
+  else statsPaymentFilter.add(method)
+  renderStatsPaymentBar()
+  renderStatsFiltered()
+}
+
 function renderStatsFiltered() {
+  renderStatsPayerBar()
+  renderStatsCardBar()
+  renderStatsPaymentBar()
   const filtered = getStatsExpenses()
   const totalJPY = filtered.reduce((s, e) => s + (e.totalAmount || 0), 0)
   const jEl = document.getElementById('total-jpy')
@@ -259,10 +277,12 @@ function renderStatsFiltered() {
 }
 
 function clearStatsFilter() {
-  statsPayerFilter = new Set()
-  statsCardFilter  = new Set()
+  statsPayerFilter   = new Set()
+  statsCardFilter    = new Set()
+  statsPaymentFilter = new Set()
   renderStatsPayerBar()
   renderStatsCardBar()
+  renderStatsPaymentBar()
   renderStatsFiltered()
 }
 

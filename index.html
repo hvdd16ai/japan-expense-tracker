@@ -42,11 +42,14 @@
     <header class="page-header"><h1>統計</h1></header>
     <div class="stats-filter-wrap">
       <div class="stats-filter-row">
-        <span class="stats-filter-section-label">付款人</span>
+        <span class="stats-filter-section-label">篩選</span>
         <button class="stats-filter-clear" onclick="clearStatsFilter()">重設</button>
       </div>
+      <div class="stats-filter-section-label">付款人</div>
       <div class="cat-filter-bar" id="stats-payer-bar"></div>
-      <div class="stats-filter-section-label" id="stats-card-label" style="display:none;padding:4px 16px 0">信用卡</div>
+      <div class="stats-filter-section-label" id="stats-payment-label" style="display:none">付款方式</div>
+      <div class="cat-filter-bar" id="stats-payment-bar"></div>
+      <div class="stats-filter-section-label" id="stats-card-label" style="display:none">信用卡</div>
       <div class="cat-filter-bar" id="stats-card-bar"></div>
     </div>
     <div class="summary-bar">
