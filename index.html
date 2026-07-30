@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>旅遊記帳</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icon-180.png">
+  <meta name="theme-color" content="#0076D6">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="旅遊記帳">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<!-- ═══ App shell ═══════════════════════════════════════════════ -->
+<div id="app">
+
+  <!-- ─── Tab: 費用清單 ──────────────────────────────────────── -->
+  <div class="tab-content" id="tab-expenses">
+    <header class="page-header">
+      <h1>費用清單</h1>
+      <div style="display:flex;gap:8px">
+        <button class="btn-icon btn-icon-scan" onclick="openScanModal()" aria-label="掃描收據">📷</button>
+        <button class="btn-icon" onclick="openAddModal()" aria-label="新增費用">＋</button>
+      </div>
+    </header>
+    <div class="sticky-toolbar">
+      <div class="search-bar">
+        <span class="search-icon">🔍</span>
+        <input type="text" id="search-input" class="search-input" placeholder="搜尋商店、商品、付款人…" oninput="renderExpenses()">
+        <button class="search-clear" id="search-clear" onclick="clearSearch()" style="display:none">✕</button>
+      </div>
+      <div class="cat-filter-bar" id="cat-filter-bar"></div>
+    </div>
+    <div id="expense-list" class="list-section"></div>
+  </div>
+
+  <!-- ─── Tab: 統計 ──────────────────────────────────────────── -->
+  <div class="tab-content hidden" id="tab-stats">
+    <header class="page-header"><h1>統計</h1></header>
+    <div class="summary-bar">
+      <div class="summary-item">
+        <span class="summary-label">日幣合計</span>
+        <span class="summary-value" id="total-jpy">¥0</span>
+      </div>
+      <div class="summary-divider"></div>
+      <div class="summary-item">
+        <span class="summary-label">台幣換算</span>
+        <span class="summary-value" id="total-twd">NT$0</span>
+      </div>
+    </div>
+    <div class="stats-content">
+      <div class="chart-card">
+        <div class="chart-title-row">
+          <span class="chart-title">分類統計</span>
+          <div class="chart-toggle">
+            <button id="btn-donut" class="chart-toggle-btn active" onclick="switchChart('donut')">圓餅</button>
+            <button id="btn-bar" class="chart-toggle-btn" onclick="switchChart('bar')">長條</button>
+          </div>
+        </div>
+        <div id="chart-donut-wrap" class="donut-wrap">
+          <div class="donut-canvas-wrap">
+            <canvas id="donut-chart"></canvas>
+          </div>
+          <div class="donut-info" id="donut-info"></div>
+        </div>
+        <div id="chart-bar-wrap" class="hidden">
+          <div class="chart-container"><canvas id="bar-chart"></canvas></div>
+        </div>
+      </div>
+      <div id="stats-legend" class="stats-legend"></div>
+    </div>
+  </div>
+
+  <!-- ─── Tab: 設定 ──────────────────────────────────────────── -->
+  <div class="tab-content hidden" id="tab-settings">
+    <header class="page-header"><h1>設定</h1></header>
+    <div class="settings-content">
+
+      <div class="settings-group">
+        <div class="settings-group-label">匯率</div>
+        <div style="padding: 12px 16px 4px">
+          <div style="display:flex;align-items:center;gap:8px">
+            <span style="font-size:15px;color:var(--text2);white-space:nowrap">1 JPY =</span>
+            <input type="number" id="setting-rate" class="rate-big-input" placeholder="0.22" step="0.001" min="0.001">
+            <span style="font-size:15px;color:var(--text2);white-space:nowrap">NT$</span>
+          </div>
+        </div>
+        <div class="settings-hint" id="rate-hint">¥1,000 ≈ NT$220</div>
+      </div>
+
+      <div class="settings-group">
+        <div class="settings-group-label">付款人名單</div>
+        <div id="payer-list" class="payer-list"></div>
+        <div class="payer-add-row">
+          <input type="text" id="payer-input" class="payer-add-input" placeholder="新增旅伴名字">
+          <button class="btn-payer-add" onclick="addPayer()">新增</button>
+        </div>
+      </div>
+
+      <div class="settings-group">
+        <div class="settings-group-label">信用卡清單</div>
+        <div id="card-list" class="payer-list"></div>
+        <div class="payer-add-row">
+          <input type="text" id="card-input" class="payer-add-input" placeholder="例：玉山 Visa、台新 Master">
+          <button class="btn-payer-add" onclick="addCard()">新增</button>
+        </div>
+      </div>
+
+      <div class="settings-group">
+        <div class="settings-group-label">多人共享（Firebase）</div>
+        <div class="settings-row">
+          <span class="settings-row-label">狀態</span>
+          <span id="firebase-status" style="font-size:14px;color:var(--text2)">未連接</span>
+        </div>
+        <div class="settings-row">
+          <span class="settings-row-label">旅行代碼</span>
+          <input type="text" id="setting-tripid" class="settings-input" placeholder="例：TOKYO01" style="text-transform:uppercase;letter-spacing:2px">
+          <button class="btn-sm" onclick="generateTripCode()" style="margin-left:6px;white-space:nowrap;color:var(--accent)">產生</button>
+        </div>
+        <div class="settings-row">
+          <span class="settings-row-label">Firebase API Key</span>
+          <input type="password" id="setting-fbkey" class="settings-input" placeholder="AIza...">
+        </div>
+        <div class="settings-row">
+          <span class="settings-row-label">專案 ID</span>
+          <input type="text" id="setting-fbproject" class="settings-input" placeholder="my-project-id">
+        </div>
+        <button class="btn-sm" onclick="connectFirebase()" style="margin-top:8px;color:var(--accent);width:100%;padding:10px">連接 Firebase</button>
+        <div class="settings-hint">旅伴輸入相同旅行代碼即可共享記帳</div>
+      </div>
+
+      <div class="settings-group">
+        <div class="settings-group-label">Gemini API</div>
+        <div class="settings-row">
+          <span class="settings-row-label">API Key</span>
+          <input type="password" id="setting-apikey" class="settings-input" placeholder="AIza...">
+        </div>
+        <div class="settings-hint">
+          至 <a href="https://aistudio.google.com" target="_blank" style="color:var(--accent)">aistudio.google.com</a> 免費取得 API Key（每天 1500 次）
+        </div>
+      </div>
+
+      <div class="settings-group">
+        <div class="settings-group-label">資料</div>
+        <div class="settings-row">
+          <span class="settings-row-label">備份（JSON）</span>
+          <button class="btn-sm" onclick="exportJSON()" style="color:var(--accent)">匯出</button>
+        </div>
+        <div class="settings-row">
+          <span class="settings-row-label">還原備份</span>
+          <button class="btn-sm" onclick="importJSON()" style="color:var(--accent)">匯入</button>
+        </div>
+        <div class="settings-row">
+          <span class="settings-row-label">匯出 CSV</span>
+          <button class="btn-sm" onclick="exportCSV()" style="color:var(--accent)">下載</button>
+        </div>
+      </div>
+
+      <button class="btn-danger-full" onclick="confirmClear()">清除所有記帳資料</button>
+    </div>
+  </div>
+
+</div>
+
+<!-- ═══ Bottom tab bar ═══════════════════════════════════════════ -->
+<nav class="tab-bar">
+  <button class="tab-item active" data-tab="expenses" onclick="switchTab('expenses')">
+    <span class="tab-icon">💴</span>
+    <span class="tab-label">費用</span>
+  </button>
+  <button class="tab-item" data-tab="stats" onclick="switchTab('stats')">
+    <span class="tab-icon">📊</span>
+    <span class="tab-label">統計</span>
+  </button>
+  <button class="tab-item" data-tab="settings" onclick="switchTab('settings')">
+    <span class="tab-icon">⚙️</span>
+    <span class="tab-label">設定</span>
+  </button>
+</nav>
+
+<!-- ═══ Modal: 新增 / 編輯費用 ══════════════════════════════════ -->
+<div id="modal-add" class="modal hidden" onclick="handleModalBg(event,'modal-add')">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-header">
+      <button class="modal-btn" onclick="closeModal('modal-add')">取消</button>
+      <span class="modal-title" id="modal-add-title">新增費用</span>
+      <button class="modal-btn modal-btn-confirm" onclick="saveExpense()">儲存</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-section">
+        <label class="form-label">商店名稱</label>
+        <input type="text" id="f-store" class="form-input" placeholder="例：ローソン渋谷店（選填）">
+      </div>
+      <div class="form-section">
+        <label class="form-label">日期</label>
+        <input type="date" id="f-date" class="form-input">
+      </div>
+      <div class="form-section form-row">
+        <div class="form-col">
+          <label class="form-label">付款人</label>
+          <select id="f-payer" class="form-select"></select>
+        </div>
+        <div class="form-col">
+          <label class="form-label">付款方式</label>
+          <select id="f-payment" class="form-select" onchange="onPaymentChange('f-payment','f-card-row','f-card')"></select>
+        </div>
+      </div>
+
+      <div id="f-card-row" class="form-section" style="display:none">
+        <label class="form-label">信用卡</label>
+        <select id="f-card" class="form-select"></select>
+      </div>
+
+      <div class="form-section">
+        <div class="form-section-header">
+          <label class="form-label">商品明細</label>
+          <button type="button" class="btn-add-item" onclick="addItemRow()">＋ 新增</button>
+        </div>
+        <div id="items-container"></div>
+      </div>
+
+      <div class="form-section">
+        <div class="form-section-header">
+          <label class="form-label">優惠 / 折扣</label>
+          <button type="button" class="btn-add-item" onclick="addDiscountRow()">＋ 新增</button>
+        </div>
+        <div id="discounts-container"></div>
+      </div>
+
+      <div class="form-section">
+        <label class="form-label">消費税 / 服務費 / 免税</label>
+        <div class="tax-grid">
+          <div class="tax-field">
+            <span class="tax-label">消費税 8%</span>
+            <input type="number" id="f-tax8" class="tax-input" placeholder="0" min="0" oninput="updateFormTotal()">
+          </div>
+          <div class="tax-field">
+            <span class="tax-label">消費税 10%</span>
+            <input type="number" id="f-tax10" class="tax-input" placeholder="0" min="0" oninput="updateFormTotal()">
+          </div>
+          <div class="tax-field">
+            <span class="tax-label">服務費</span>
+            <input type="number" id="f-service" class="tax-input" placeholder="0" min="0" oninput="updateFormTotal()">
+          </div>
+          <div class="tax-field">
+            <span class="tax-label">免税額（折抵）</span>
+            <input type="number" id="f-taxfree" class="tax-input" placeholder="0" min="0" oninput="updateFormTotal()">
+          </div>
+        </div>
+      </div>
+
+      <div class="form-total">
+        <span class="form-label" style="margin-bottom:0">合計（日幣）</span>
+        <span id="f-total" class="form-total-value">¥0</span>
+      </div>
+
+      <div class="form-section">
+        <label class="form-label">備註</label>
+        <input type="text" id="f-note" class="form-input" placeholder="選填">
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ Modal: 掃描收據 ══════════════════════════════════════════ -->
+<div id="modal-scan" class="modal hidden" onclick="handleModalBg(event,'modal-scan')">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-header">
+      <button class="modal-btn" onclick="closeModal('modal-scan')">取消</button>
+      <span class="modal-title">掃描收據</span>
+      <span style="min-width:44px"></span>
+    </div>
+    <div class="modal-body" id="scan-body">
+      <!-- Step 1: Select photo -->
+      <div id="scan-step-1" class="scan-step">
+        <input type="file" id="scan-file" accept="image/*" capture="environment" style="display:none" onchange="onFileSelected(event)">
+        <div class="scan-photo-area" onclick="document.getElementById('scan-file').click()">
+          <span class="scan-icon">🧾</span>
+          <span class="scan-photo-label">選擇收據照片</span>
+          <span class="scan-photo-hint">點擊拍照或從相簿選取</span>
+        </div>
+        <img id="scan-preview" alt="預覽">
+        <button id="btn-scan-go" class="btn-scan-start" onclick="runScan()" disabled>
+          <span>✨</span> 開始辨識
+        </button>
+      </div>
+      <!-- Step 2: Loading -->
+      <div id="scan-step-2" class="scan-loading hidden">
+        <div class="spin"></div>
+        <span>Gemini 辨識中⋯</span>
+      </div>
+      <!-- Step 3: Error -->
+      <div id="scan-step-err" class="scan-error hidden">
+        <span style="font-size:40px">⚠️</span>
+        <span id="scan-error-msg">辨識失敗</span>
+        <button class="btn-retry" onclick="resetScan()">重試</button>
+      </div>
+      <!-- Step 4: Review -->
+      <div id="scan-step-3" class="hidden">
+        <div class="scan-review">
+          <div class="scan-store" id="review-store"></div>
+          <div id="review-items"></div>
+          <div class="review-meta-row">
+            <div class="review-meta-col">
+              <label class="form-label">付款人</label>
+              <select id="review-payer" class="form-select"></select>
+            </div>
+            <div class="review-meta-col">
+              <label class="form-label">付款方式</label>
+              <select id="review-payment" class="form-select" onchange="onPaymentChange('review-payment','review-card-row','review-card')"></select>
+            </div>
+          </div>
+          <div id="review-card-row" class="form-section" style="display:none;padding:8px 0 0">
+            <label class="form-label">信用卡</label>
+            <select id="review-card" class="form-select"></select>
+          </div>
+          <div class="form-section" style="padding:8px 0 0">
+            <label class="form-label">日期</label>
+            <input type="date" id="review-date" class="form-input">
+          </div>
+          <button class="btn-confirm-scan" onclick="confirmScan()">加入記帳</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

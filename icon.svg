@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="115" fill="#C0392B"/>
+  <rect x="140" y="148" width="232" height="26" rx="13" fill="white" opacity="0.95"/>
+  <rect x="164" y="200" width="184" height="22" rx="11" fill="white" opacity="0.9"/>
+  <text x="256" y="350" text-anchor="middle" font-family="-apple-system, Helvetica" font-size="140" font-weight="700" fill="white">¥</text>
+  <rect x="170" y="380" width="172" height="14" rx="7" fill="white" opacity="0.5"/>
+</svg>
