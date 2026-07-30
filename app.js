@@ -96,7 +96,13 @@ function generateInviteLink() {
 }
 
 function applyInviteLink() {
-  const c = new URLSearchParams(location.search).get('c')
+  const params = new URLSearchParams(location.search)
+  // 清除強制更新留下的 ?_= 時間戳記
+  if (params.has('_')) {
+    history.replaceState(null, '', location.pathname)
+    return
+  }
+  const c = params.get('c')
   if (!c) return
   try {
     const data = JSON.parse(atob(c))
@@ -1267,24 +1273,6 @@ function forceUpdate() {
       .then(bust)
   } else {
     bust()
-  }
-}
-
-function confirmResetAll() {
-  const pwd = prompt('重置後所有資料和設定都會清除，請輸入密碼確認：')
-  if (pwd === null) return
-  if (pwd !== '594677') { showToast('密碼錯誤'); return }
-  if (fsUnsubscribe) { fsUnsubscribe(); fsUnsubscribe = null }
-  db = null
-  localStorage.clear()
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.getRegistrations()
-      .then(regs => Promise.all(regs.map(r => r.unregister())))
-      .then(() => caches.keys())
-      .then(keys => Promise.all(keys.map(k => caches.delete(k))))
-      .then(() => location.reload(true))
-  } else {
-    location.reload(true)
   }
 }
 
