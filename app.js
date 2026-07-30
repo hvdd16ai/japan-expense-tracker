@@ -1262,7 +1262,7 @@ function esc(str) {
 // ── Sample data ───────────────────────────────────────────────────
 function loadSampleData() {
   expenses = [
-    // 7-11 便利商店 ── Suica、餐飲、消費税 8%
+    // 7-11 便利商店 ── 我、Suica、餐飲
     { id: 1, date: '2026-07-24', storeName: '7-11 新宿店（セブン-イレブン 新宿店）', payer: '我', paymentMethod: 'Suica（IC卡）', card: '',
       items: [
         { name: '梅子飯糰（おにぎり 梅）', quantity: 2, price: 150, category: '餐飲' },
@@ -1270,14 +1270,14 @@ function loadSampleData() {
         { name: '巧克力（チョコレート）',   quantity: 1, price: 200, category: '餐飲' },
       ], discounts: [], tax8: 42, tax10: 0, taxFree: 0, serviceCharge: 0, totalAmount: 630, note: '食品適用 8% 稅率', _expanded: false },
 
-    // 新幹線 ── Suica、交通
-    { id: 2, date: '2026-07-24', storeName: '東京車站（東京駅）', payer: '我', paymentMethod: 'Suica（IC卡）', card: '',
+    // 新幹線 ── yh、Suica、交通
+    { id: 2, date: '2026-07-24', storeName: '東京車站（東京駅）', payer: 'yh', paymentMethod: 'Suica（IC卡）', card: '',
       items: [
         { name: '新幹線 東京→京都 自由席', quantity: 1, price: 13320, category: '交通' },
       ], discounts: [], tax8: 0, tax10: 0, taxFree: 0, serviceCharge: 0, totalAmount: 13320, note: '自由席', _expanded: false },
 
-    // 藥妝店 ── 信用卡、購物、消費税 10%、點數折扣
-    { id: 3, date: '2026-07-25', storeName: '松本清藥妝（マツモトキヨシ）', payer: '我', paymentMethod: '信用卡', card: '玉山 Visa',
+    // 藥妝店 ── carol、信用卡（富邦J）、購物
+    { id: 3, date: '2026-07-25', storeName: '松本清藥妝（マツモトキヨシ）', payer: 'carol', paymentMethod: '信用卡', card: '富邦J',
       items: [
         { name: '曼秀雷敦護唇膏（メンソレータム）',  quantity: 1, price: 618, category: '購物' },
         { name: '碧柔防曬乳（ビオレUV 日焼け止め）', quantity: 1, price: 891, category: '購物' },
@@ -1285,33 +1285,33 @@ function loadSampleData() {
       ], discounts: [{ name: '點數折抵（ポイント割引）', amount: 50 }],
       tax8: 0, tax10: 209, taxFree: 0, serviceCharge: 0, totalAmount: 2250, note: '', _expanded: false },
 
-    // 拉麵 ── 現金、餐飲、服務費
-    { id: 4, date: '2026-07-25', storeName: '一蘭拉麵 道頓堀店', payer: '我', paymentMethod: '現金', card: '',
+    // 拉麵 ── yh、現金、餐飲
+    { id: 4, date: '2026-07-25', storeName: '一蘭拉麵 道頓堀店', payer: 'yh', paymentMethod: '現金', card: '',
       items: [
         { name: '豬骨拉麵（天然とんこつラーメン）', quantity: 1, price: 1091, category: '餐飲' },
         { name: '加叉燒（チャーシュー追加）',        quantity: 2, price: 182, category: '餐飲' },
       ], discounts: [], tax8: 0, tax10: 145, taxFree: 0, serviceCharge: 100, totalAmount: 1700, note: '含服務費', _expanded: false },
 
-    // USJ ── 信用卡、娛樂 + 購物、免税
-    { id: 5, date: '2026-07-26', storeName: 'USJ（ユニバーサル・スタジオ・ジャパン）', payer: '我', paymentMethod: '信用卡', card: '台新 Master',
+    // USJ ── 我、信用卡（永豐大戶）、娛樂 + 購物
+    { id: 5, date: '2026-07-26', storeName: 'USJ（ユニバーサル・スタジオ・ジャパン）', payer: '我', paymentMethod: '信用卡', card: '永豐大戶',
       items: [
         { name: '一日票（1DAYパス）',                              quantity: 1, price: 10400, category: '娛樂' },
         { name: '哈利波特限定周邊（ハリー・ポッター限定グッズ）', quantity: 1, price: 2909, category: '購物' },
       ], discounts: [], tax8: 0, tax10: 0, taxFree: 3309, serviceCharge: 0, totalAmount: 10000, note: '出示護照免税', _expanded: false },
 
-    // 飯店住宿 ── 信用卡、住宿、消費税 10%
-    { id: 6, date: '2026-07-24', storeName: '京都商務旅館（スーパーホテル 京都）', payer: '我', paymentMethod: '信用卡', card: '玉山 Visa',
+    // 飯店住宿 ── carol、信用卡（星展）、住宿
+    { id: 6, date: '2026-07-24', storeName: '京都商務旅館（スーパーホテル 京都）', payer: 'carol', paymentMethod: '信用卡', card: '星展',
       items: [
         { name: '標準房 2晚（スタンダードルーム 2泊）', quantity: 2, price: 7500, category: '住宿' },
       ], discounts: [], tax8: 0, tax10: 1500, taxFree: 0, serviceCharge: 0, totalAmount: 16500, note: '含早餐', _expanded: false },
 
-    // 大阪地鐵 ── PayPay、交通
+    // 大阪地鐵 ── 我、PayPay、交通
     { id: 7, date: '2026-07-25', storeName: '大阪地下鐵（Osaka Metro）', payer: '我', paymentMethod: 'PayPay', card: '',
       items: [
         { name: '大阪地鐵一日票（一日乗車券）', quantity: 1, price: 800, category: '交通' },
       ], discounts: [], tax8: 0, tax10: 0, taxFree: 0, serviceCharge: 0, totalAmount: 800, note: '', _expanded: false },
 
-    // 燒肉居酒屋 ── Apple Pay、餐飲、服務費 + 消費税 10%
+    // 燒肉居酒屋 ── 我、Apple Pay、餐飲
     { id: 8, date: '2026-07-26', storeName: '燒肉王 難波店（焼肉 きんぐ 難波店）', payer: '我', paymentMethod: 'Apple Pay', card: '',
       items: [
         { name: '牛五花（カルビ）',  quantity: 3, price: 638, category: '餐飲' },
@@ -1321,16 +1321,16 @@ function loadSampleData() {
       ], discounts: [{ name: '折價券（クーポン）', amount: 300 }],
       tax8: 0, tax10: 528, taxFree: 0, serviceCharge: 200, totalAmount: 5400, note: '4人聚餐我付', _expanded: false },
 
-    // 唐吉訶德 ── 全支付、購物、免税
-    { id: 9, date: '2026-07-27', storeName: '唐吉訶德 心齋橋（ドン・キホーテ 心斎橋店）', payer: '我', paymentMethod: '全支付', card: '',
+    // 唐吉訶德 ── yh、全支付、購物
+    { id: 9, date: '2026-07-27', storeName: '唐吉訶德 心齋橋（ドン・キホーテ 心斎橋店）', payer: 'yh', paymentMethod: '全支付', card: '',
       items: [
         { name: '美白乳液（ちふれ 美白乳液）',  quantity: 2, price: 660, category: '購物' },
         { name: 'KitKat 抹茶（キットカット）',  quantity: 3, price: 540, category: '購物' },
         { name: '扇子（うちわ）',               quantity: 2, price: 380, category: '購物' },
       ], discounts: [], tax8: 0, tax10: 0, taxFree: 2380, serviceCharge: 0, totalAmount: 3080, note: '出示護照免税', _expanded: false },
 
-    // FamilyMart ── Suica、多類別（餐飲＋購物）
-    { id: 10, date: '2026-07-26', storeName: 'FamilyMart 梅田店（ファミリーマート 梅田店）', payer: '我', paymentMethod: 'Suica（IC卡）', card: '',
+    // FamilyMart ── carol、Suica、多類別（餐飲＋購物）
+    { id: 10, date: '2026-07-26', storeName: 'FamilyMart 梅田店（ファミリーマート 梅田店）', payer: 'carol', paymentMethod: 'Suica（IC卡）', card: '',
       items: [
         { name: '蛋沙拉三明治（たまごサンド）',       quantity: 1, price: 248, category: '餐飲' },
         { name: '可爾必思（カルピスウォーター）',      quantity: 2, price: 138, category: '餐飲' },
@@ -1339,8 +1339,8 @@ function loadSampleData() {
         { name: '退熱貼（熱さまシート）',              quantity: 1, price: 398, category: '購物' },
       ], discounts: [], tax8: 30, tax10: 149, taxFree: 0, serviceCharge: 0, totalAmount: 1995, note: '餐飲 8%、日用品 10%', _expanded: false },
 
-    // Starbucks ── 玉山電支、餐飲
-    { id: 11, date: '2026-07-27', storeName: '星巴克 京都四条（スターバックス 京都四条店）', payer: '我', paymentMethod: '玉山電支', card: '',
+    // Starbucks ── yh、玉山電支、餐飲
+    { id: 11, date: '2026-07-27', storeName: '星巴克 京都四条（スターバックス 京都四条店）', payer: 'yh', paymentMethod: '玉山電支', card: '',
       items: [
         { name: '櫻花星冰樂（さくらフラペチーノ）', quantity: 1, price: 780, category: '餐飲' },
         { name: '焦糖拿鐵（キャラメルラテ）',       quantity: 1, price: 650, category: '餐飲' },
