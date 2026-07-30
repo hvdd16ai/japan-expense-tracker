@@ -25,6 +25,12 @@ function load() {
   try { expenses = JSON.parse(localStorage.getItem('expenses') || '[]') } catch { expenses = [] }
   try { settings = { ...settings, ...JSON.parse(localStorage.getItem('settings') || '{}') } } catch {}
   if (!Array.isArray(settings.payers) || settings.payers.length === 0) settings.payers = ['我']
+  // 合併預設付款人和信用卡（不覆蓋已有的）
+  const defaultPayers = ['我', 'yh', 'carol']
+  const defaultCards  = ['富邦J', '永豐大戶', '星展']
+  defaultPayers.forEach(p => { if (!settings.payers.includes(p)) settings.payers.push(p) })
+  if (!Array.isArray(settings.cards)) settings.cards = []
+  defaultCards.forEach(c => { if (!settings.cards.includes(c)) settings.cards.push(c) })
 }
 
 function save() {
