@@ -422,8 +422,8 @@ function deleteExpense(id) {
 let donutChart = null, barChart = null
 let activeChartType = 'donut'
 
-function renderStats(data) {
-  const src = data || expenses
+function renderStats(filteredData) {
+  const src = filteredData || expenses
   const legend = document.getElementById('stats-legend')
   if (src.length === 0) {
     if (donutChart) { donutChart.destroy(); donutChart = null }
