@@ -137,7 +137,10 @@
           <span class="settings-row-label">專案 ID</span>
           <input type="text" id="setting-fbproject" class="settings-input" placeholder="my-project-id">
         </div>
-        <button class="btn-sm" onclick="connectFirebase()" style="margin-top:8px;color:var(--accent);width:100%;padding:10px">連接 Firebase</button>
+        <div style="display:flex;gap:8px;margin-top:8px">
+          <button class="btn-sm" onclick="connectFirebase()" style="color:var(--accent);flex:1;padding:10px">連接 Firebase</button>
+          <button class="btn-sm" onclick="disconnectFirebase()" style="color:var(--danger);flex:1;padding:10px">斷線</button>
+        </div>
         <div class="settings-hint">旅伴輸入相同旅行代碼即可共享記帳</div>
       </div>
 
@@ -146,6 +149,10 @@
         <div class="settings-row">
           <span class="settings-row-label">API Key</span>
           <input type="password" id="setting-apikey" class="settings-input" placeholder="AIza...">
+        </div>
+        <div style="padding: 0 16px 12px; display:flex; align-items:center; gap:10px">
+          <button class="btn-sm" onclick="testGeminiKey()" style="color:var(--accent)">測試 API Key</button>
+          <span id="gemini-test-result" style="font-size:13px"></span>
         </div>
         <div class="settings-hint">
           至 <a href="https://aistudio.google.com" target="_blank" style="color:var(--accent)">aistudio.google.com</a> 免費取得 API Key（每天 1500 次）

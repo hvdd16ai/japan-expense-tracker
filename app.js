@@ -166,6 +166,19 @@ function connectFirebase() {
   initFirebase()
 }
 
+function disconnectFirebase() {
+  if (fsUnsubscribe) { fsUnsubscribe(); fsUnsubscribe = null }
+  db = null
+  settings.firebaseConfig = { apiKey: '', projectId: '' }
+  settings.tripId = ''
+  save()
+  document.getElementById('setting-fbkey').value = ''
+  document.getElementById('setting-fbproject').value = ''
+  document.getElementById('setting-tripid').value = ''
+  updateFirebaseStatus('未連接')
+  showToast('已斷線，資料改為本機儲存')
+}
+
 // ── Tab switching ─────────────────────────────────────────────────
 function switchTab(tab) {
   document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'))
@@ -855,6 +868,30 @@ function saveExpense() {
 }
 
 // ── Receipt scanner ───────────────────────────────────────────────
+async function testGeminiKey() {
+  const key = document.getElementById('setting-apikey').value.trim()
+  const result = document.getElementById('gemini-test-result')
+  if (!key) { result.textContent = '⚠️ 請先輸入 API Key'; result.style.color = 'var(--warn)'; return }
+  result.textContent = '測試中…'; result.style.color = 'var(--text2)'
+  try {
+    const res = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent?key=${key}`,
+      { method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ contents: [{ parts: [{ text: '1+1=?' }] }] }) }
+    )
+    const data = await res.json()
+    if (data.candidates) {
+      result.textContent = '✓ API Key 正常'; result.style.color = 'var(--ok)'
+    } else if (data.error?.code === 429) {
+      result.textContent = '⚠️ 配額已用完（Key 有效）'; result.style.color = 'var(--warn)'
+    } else {
+      result.textContent = '✗ ' + (data.error?.message?.slice(0, 40) || '無效'); result.style.color = 'var(--danger)'
+    }
+  } catch(e) {
+    result.textContent = '✗ 網路錯誤'; result.style.color = 'var(--danger)'
+  }
+}
+
 function openScanModal() {
   if (!settings.geminiApiKey) {
     showToast('請先在設定頁填入 Gemini API Key')
