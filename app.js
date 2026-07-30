@@ -221,7 +221,7 @@ function _renderChipBar(barId, labelId, items, activeSet, toggleFn) {
   if (label) label.style.display = ''
   bar.innerHTML = items.map(v => {
     const active = activeSet.has(v) ? ' active' : ''
-    return `<button class="cat-filter-btn stats-chip${active}" onclick="${toggleFn}(${JSON.stringify(v)})">${esc(v)}</button>`
+    return `<button class="cat-filter-btn stats-chip${active}" data-val="${esc(v)}" onclick="${toggleFn}(this.dataset.val)">${esc(v)}</button>`
   }).join('')
 }
 
