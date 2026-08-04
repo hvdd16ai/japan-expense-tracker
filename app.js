@@ -1297,17 +1297,17 @@ function exportCSV() {
 
 // ── Misc ──────────────────────────────────────────────────────────
 function forceUpdate() {
-  showToast('更新中…')
-  const bust = () => { location.href = location.pathname + '?_=' + Date.now() }
+  showToast('更新中…請稍候')
+  sessionStorage.setItem('force_update_stage2', '1')
+  const reload = () => location.reload(true)
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.getRegistrations()
       .then(regs => Promise.all(regs.map(r => r.unregister())))
       .then(() => caches.keys())
       .then(keys => Promise.all(keys.map(k => caches.delete(k))))
-      .then(bust)
-  } else {
-    bust()
-  }
+      .then(reload)
+      .catch(reload)
+  } else { reload() }
 }
 
 function confirmClear() {
@@ -1430,6 +1430,17 @@ function loadSampleData() {
 
 // ── Init ──────────────────────────────────────────────────────────
 function init() {
+  // 強制更新第二段：第一次 reload 後 SW 重新安裝，等 SW ready 再 reload 一次確保載入最新版
+  if (sessionStorage.getItem('force_update_stage2')) {
+    sessionStorage.removeItem('force_update_stage2')
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.ready
+        .then(() => { showToast('更新完成！'); setTimeout(() => location.reload(true), 800) })
+        .catch(() => showToast('更新完成！'))
+      return
+    }
+  }
+
   load()
   applyInviteLink()
   const fbCfg = settings.firebaseConfig || {}
