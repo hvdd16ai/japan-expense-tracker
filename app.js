@@ -74,8 +74,11 @@ function isFirebaseReady() {
 function updateFirebaseStatus(msg) {
   const el = document.getElementById('firebase-status')
   if (el) el.textContent = msg
+  const connected = isFirebaseReady()
   const inviteWrap = document.getElementById('invite-btn-wrap')
-  if (inviteWrap) inviteWrap.style.display = isFirebaseReady() ? '' : 'none'
+  if (inviteWrap) inviteWrap.style.display = connected ? '' : 'none'
+  const syncBtn = document.getElementById('btn-sync')
+  if (syncBtn) syncBtn.style.display = connected ? '' : 'none'
 }
 
 function generateInviteLink() {
@@ -162,6 +165,7 @@ function initFirebase() {
 }
 
 function setupRealtimeSync() {
+  if (fsUnsubscribe) { fsUnsubscribe(); fsUnsubscribe = null }
   const ref = db.collection('trips').doc(settings.tripId).collection('expenses')
   fsUnsubscribe = ref.onSnapshot(snapshot => {
     const expandedIds = new Set(expenses.filter(e => e._expanded).map(e => e.id))
@@ -171,11 +175,19 @@ function setupRealtimeSync() {
       return exp
     })
     renderExpenses()
-    updateFirebaseStatus('已連接 ✓')
+    const t = new Date()
+    const ts = `${String(t.getHours()).padStart(2,'0')}:${String(t.getMinutes()).padStart(2,'0')}`
+    updateFirebaseStatus(`已連接 ✓  ${ts}`)
   }, err => {
     showToast('同步失敗：' + err.message)
     updateFirebaseStatus('同步失敗')
   })
+}
+
+function manualSync() {
+  if (!isFirebaseReady()) return
+  showToast('同步中…')
+  setupRealtimeSync()
 }
 
 function fsSave(exp) {
@@ -1499,6 +1511,13 @@ function init() {
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('./sw.js').catch(() => {})
   }
+
+  // 回到前台時重連 Firebase，避免 iOS 背景暫停後資料不同步
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible' && isFirebaseReady()) {
+      setupRealtimeSync()
+    }
+  })
 }
 
 document.addEventListener('DOMContentLoaded', init)
