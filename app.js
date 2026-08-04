@@ -1310,6 +1310,17 @@ function forceUpdate() {
   } else { reload() }
 }
 
+function confirmResetSample() {
+  showConfirmDialog('重置為範例資料？', '目前資料將被清除，並載入範例', () => {
+    localStorage.removeItem('app_used')
+    expenses = []
+    save()
+    loadSampleData()
+    renderExpenses()
+    showToast('已重置為範例資料')
+  })
+}
+
 function confirmClear() {
   showConfirmDialog('確定要清除所有記帳資料？', '此操作無法復原', () => {
     localStorage.setItem('app_used', '1')
