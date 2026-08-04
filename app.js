@@ -216,6 +216,7 @@ function fsReplaceAll(newExpenses) {
 }
 
 function generateTripCode() {
+  if (isFirebaseReady()) { showToast('請先斷線再更換旅行代碼'); return }
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
   let code = ''
   for (let i = 0; i < 6; i++) code += chars[Math.floor(Math.random() * chars.length)]
