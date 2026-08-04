@@ -11,7 +11,7 @@ const PMETHODS = ['現金', '信用卡', 'Suica（IC卡）', 'PayPay', '全支�
 
 // ── State ────────────────────────────────────────────────────────
 let expenses = []
-let settings = { exchangeRate: 0.22, geminiApiKey: '', payers: ['我', 'yh', 'carol'], cards: ['富邦J', '永豐大戶', '星展'], firebaseConfig: { apiKey: '', projectId: '' }, tripId: '' }
+let settings = { exchangeRate: 0.22, geminiApiKey: '', payers: ['我', 'yh', 'carol', 'ruby', 'jason'], cards: ['富邦J', '永豐大戶', '星展'], firebaseConfig: { apiKey: '', projectId: '' }, tripId: '' }
 let editingId = null
 let scanFiles = []
 let scanResult = null
@@ -26,7 +26,7 @@ function load() {
   try { settings = { ...settings, ...JSON.parse(localStorage.getItem('settings') || '{}') } } catch {}
   if (!Array.isArray(settings.payers) || settings.payers.length === 0) settings.payers = ['我']
   // 合併預設付款人和信用卡（不覆蓋已有的）
-  const defaultPayers = ['我', 'yh', 'carol']
+  const defaultPayers = ['我', 'yh', 'carol', 'ruby', 'jason']
   const defaultCards  = ['富邦J', '永豐大戶', '星展']
   defaultPayers.forEach(p => { if (!settings.payers.includes(p)) settings.payers.push(p) })
   if (!Array.isArray(settings.cards)) settings.cards = []
