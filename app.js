@@ -1005,6 +1005,15 @@ function updatePayerShare(payer, delta) {
   renderSettlement()
 }
 
+function addCustomToSettlement() {
+  const input = document.getElementById('stl-new-name')
+  if (!input) return
+  const name = input.value.trim()
+  if (!name) return
+  input.value = ''
+  addToSettlement(name)
+}
+
 function addToSettlement(name) {
   if (!settings.settlementExtra) settings.settlementExtra = []
   if (!settings.settlementExtra.includes(name)) settings.settlementExtra.push(name)
@@ -1067,23 +1076,23 @@ function renderSettlement() {
   const isEqual = payers.every(p => getShare(p) === 1)
 
   el.innerHTML = `
-    ${notIncluded.length > 0 ? `
     <div class="stl-section-label">加入分帳</div>
-    <div class="stl-card" style="padding:12px 16px;display:flex;flex-wrap:wrap;gap:8px">
-      ${notIncluded.map(p => `
-        <button class="stl-add-btn" data-p="${esc(p)}" onclick="addToSettlement(this.dataset.p)">${esc(p)} ＋</button>
-      `).join('')}
-    </div>` : ''}
+    <div class="stl-card" style="padding:12px 16px">
+      <div style="display:flex;gap:8px;margin-bottom:${notIncluded.length > 0 || extra.filter(p=>!expensePayers.includes(p)).length > 0 ? 10 : 0}px">
+        <input id="stl-new-name" type="text" placeholder="輸入名字" style="flex:1;padding:6px 10px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:15px" onkeydown="if(event.key==='Enter')addCustomToSettlement()">
+        <button onclick="addCustomToSettlement()" style="padding:6px 14px;border-radius:8px;background:var(--accent);color:#fff;border:none;font-size:15px;cursor:pointer">＋加入</button>
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px">
+        ${notIncluded.map(p => `
+          <button class="stl-add-btn" data-p="${esc(p)}" onclick="addToSettlement(this.dataset.p)">${esc(p)} ＋</button>
+        `).join('')}
+        ${extra.filter(p => !expensePayers.includes(p)).map(p => `
+          <button class="stl-add-btn stl-add-active" data-p="${esc(p)}" onclick="removeFromSettlement(this.dataset.p)">${esc(p)} ✕</button>
+        `).join('')}
+      </div>
+    </div>
 
-    ${extra.length > 0 ? `
-    <div class="stl-section-label" style="margin-top:16px">已加入（無記帳）</div>
-    <div class="stl-card" style="padding:12px 16px;display:flex;flex-wrap:wrap;gap:8px">
-      ${extra.filter(p => !expensePayers.includes(p)).map(p => `
-        <button class="stl-add-btn stl-add-active" data-p="${esc(p)}" onclick="removeFromSettlement(this.dataset.p)">${esc(p)} ✕</button>
-      `).join('')}
-    </div>` : ''}
-
-    <div class="stl-section-label" style="margin-top:${notIncluded.length > 0 || extra.length > 0 ? 16 : 0}px">分攤比例</div>
+    <div class="stl-section-label" style="margin-top:16px">分攤比例</div>
     <div class="stl-card">
       ${payers.map(p => {
         const s = getShare(p)
