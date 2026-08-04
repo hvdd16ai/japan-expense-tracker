@@ -1312,6 +1312,7 @@ function forceUpdate() {
 
 function confirmClear() {
   showConfirmDialog('確定要清除所有記帳資料？', '此操作無法復原', () => {
+    localStorage.setItem('app_used', '1')
     if (isFirebaseReady()) {
       fsClearAll().then(() => showToast('已清除'))
     } else {
@@ -1358,6 +1359,7 @@ function esc(str) {
 
 // ── Sample data ───────────────────────────────────────────────────
 function loadSampleData() {
+  localStorage.setItem('app_used', '1')
   expenses = [
     // 7-11 便利商店 ── 我、Suica、餐飲
     { id: 1, date: '2026-07-24', storeName: '7-11 新宿店（セブン-イレブン 新宿店）', payer: '我', paymentMethod: 'Suica（IC卡）', card: '',
@@ -1465,7 +1467,7 @@ function init() {
   applyInviteLink()
   const fbCfg = settings.firebaseConfig || {}
   const hasFirebase = fbCfg.apiKey && fbCfg.projectId && settings.tripId
-  if (!hasFirebase && expenses.length === 0) loadSampleData()
+  if (!hasFirebase && expenses.length === 0 && !localStorage.getItem('app_used')) loadSampleData()
   renderExpenses()
   initSettingListeners()
   if (hasFirebase) initFirebase()
