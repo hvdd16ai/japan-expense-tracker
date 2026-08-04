@@ -1000,7 +1000,7 @@ function getShare(payer) {
 function updatePayerShare(payer, delta) {
   if (!settings.payerShares) settings.payerShares = {}
   const cur = getShare(payer)
-  settings.payerShares[payer] = Math.max(0.5, Math.round((cur + delta) * 2) / 2)
+  settings.payerShares[payer] = Math.max(0, Math.round((cur + delta) * 2) / 2)
   save()
   renderSettlement()
 }
