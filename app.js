@@ -175,6 +175,7 @@ function setupRealtimeSync() {
       return exp
     })
     renderExpenses()
+    if (document.getElementById('tab-settlement') && !document.getElementById('tab-settlement').classList.contains('hidden')) renderSettlement()
     const t = new Date()
     const ts = `${String(t.getHours()).padStart(2,'0')}:${String(t.getMinutes()).padStart(2,'0')}`
     updateFirebaseStatus(`已連接 ✓  ${ts}`)
@@ -274,6 +275,7 @@ function switchTab(tab) {
   document.querySelector(`.tab-item[data-tab="${tab}"]`).classList.add('active')
   if (tab === 'stats') renderStatsFiltered()
   if (tab === 'settings') renderSettings()
+  if (tab === 'settlement') renderSettlement()
 }
 
 // ── Stats filter state ────────────────────────────────────────────
@@ -987,6 +989,83 @@ function saveExpense() {
   closeModal('modal-add')
   showToast(editingId ? '已更新' : '已新增')
   editingId = null
+}
+
+// ── Render: Settlement ───────────────────────────────────────────
+function renderSettlement() {
+  const el = document.getElementById('settlement-content')
+  if (!el) return
+  const payers = settings.payers
+  const rate = parseFloat(settings.exchangeRate) || 0.22
+
+  if (expenses.length === 0) {
+    el.innerHTML = `<div style="padding:60px 20px;text-align:center;color:var(--text2)">尚無費用記錄</div>`
+    return
+  }
+
+  // 每人付出金額
+  const paid = {}
+  payers.forEach(p => paid[p] = 0)
+  expenses.forEach(e => { if (paid[e.payer] !== undefined) paid[e.payer] += (e.totalAmount || 0) })
+
+  const total = Object.values(paid).reduce((s, v) => s + v, 0)
+  const perPerson = total / payers.length
+
+  // 餘額（正 = 多付應收，負 = 少付應給）
+  const balances = payers.map(p => ({ name: p, paid: paid[p], balance: Math.round(paid[p] - perPerson) }))
+
+  // 最佳化轉帳：最大債主配最大債務人
+  const cred = balances.filter(b => b.balance > 0).map(b => ({ ...b, rem: b.balance })).sort((a,b) => b.rem - a.rem)
+  const debt = balances.filter(b => b.balance < 0).map(b => ({ ...b, rem: -b.balance })).sort((a,b) => b.rem - a.rem)
+  const transfers = []
+  let ci = 0, di = 0
+  while (ci < cred.length && di < debt.length) {
+    const amt = Math.min(cred[ci].rem, debt[di].rem)
+    if (amt >= 1) transfers.push({ from: debt[di].name, to: cred[ci].name, amount: Math.round(amt) })
+    cred[ci].rem -= amt; debt[di].rem -= amt
+    if (cred[ci].rem < 1) ci++
+    if (debt[di].rem < 1) di++
+  }
+
+  const fmtT = n => Math.round(n * rate).toLocaleString()
+
+  el.innerHTML = `
+    <div class="stl-section-label">每人費用明細</div>
+    <div class="stl-card">
+      ${balances.map(b => `
+        <div class="stl-row">
+          <span class="stl-name">${esc(b.name)}</span>
+          <div class="stl-amounts">
+            <span class="stl-paid">付出 ${fmt(b.paid)}</span>
+            <span class="stl-balance ${b.balance > 0 ? 'stl-pos' : b.balance < 0 ? 'stl-neg' : 'stl-zero'}">
+              ${b.balance > 0 ? '▲ 應收 ' + fmt(b.balance) : b.balance < 0 ? '▼ 應付 ' + fmt(-b.balance) : '✓ 持平'}
+            </span>
+          </div>
+        </div>`).join('')}
+      <div class="stl-footer">
+        <span>總計 ${fmt(total)}</span>
+        <span>每人應付 ${fmt(Math.round(perPerson))}　NT$${fmtT(perPerson)}</span>
+      </div>
+    </div>
+
+    <div class="stl-section-label" style="margin-top:20px">轉帳清單</div>
+    ${transfers.length === 0
+      ? `<div class="stl-card" style="padding:16px;text-align:center;color:var(--ok);font-weight:600">✓ 已平帳，無需轉帳</div>`
+      : `<div class="stl-card">
+          ${transfers.map(t => `
+            <div class="stl-transfer">
+              <div class="stl-transfer-names">
+                <span class="stl-from">${esc(t.from)}</span>
+                <span class="stl-arrow">→</span>
+                <span class="stl-to">${esc(t.to)}</span>
+              </div>
+              <div class="stl-transfer-amt">
+                <span class="stl-tjpy">${fmt(t.amount)}</span>
+                <span class="stl-ttwd">NT$${fmtT(t.amount)}</span>
+              </div>
+            </div>`).join('')}
+        </div>`}
+  `
 }
 
 // ── Receipt scanner ───────────────────────────────────────────────

@@ -197,6 +197,12 @@
     </div>
   </div>
 
+  <!-- ─── Tab: 結算 ──────────────────────────────────────────── -->
+  <div class="tab-content hidden" id="tab-settlement">
+    <header class="page-header"><h1>結算</h1></header>
+    <div id="settlement-content" style="padding:0 0 100px"></div>
+  </div>
+
 </div>
 
 <!-- ═══ Bottom tab bar ═══════════════════════════════════════════ -->
@@ -208,6 +214,10 @@
   <button class="tab-item" data-tab="stats" onclick="switchTab('stats')">
     <span class="tab-icon">📊</span>
     <span class="tab-label">統計</span>
+  </button>
+  <button class="tab-item" data-tab="settlement" onclick="switchTab('settlement')">
+    <span class="tab-icon">💰</span>
+    <span class="tab-label">結算</span>
   </button>
   <button class="tab-item" data-tab="settings" onclick="switchTab('settings')">
     <span class="tab-icon">⚙️</span>
