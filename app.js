@@ -992,6 +992,19 @@ function saveExpense() {
 }
 
 // ── Render: Settlement ───────────────────────────────────────────
+function getShare(payer) {
+  if (!settings.payerShares) settings.payerShares = {}
+  return settings.payerShares[payer] ?? 1
+}
+
+function updatePayerShare(payer, delta) {
+  if (!settings.payerShares) settings.payerShares = {}
+  const cur = getShare(payer)
+  settings.payerShares[payer] = Math.max(0.5, Math.round((cur + delta) * 2) / 2)
+  save()
+  renderSettlement()
+}
+
 function renderSettlement() {
   const el = document.getElementById('settlement-content')
   if (!el) return
@@ -1009,12 +1022,18 @@ function renderSettlement() {
   expenses.forEach(e => { if (paid[e.payer] !== undefined) paid[e.payer] += (e.totalAmount || 0) })
 
   const total = Object.values(paid).reduce((s, v) => s + v, 0)
-  const perPerson = total / payers.length
+  const totalShares = payers.reduce((s, p) => s + getShare(p), 0)
 
-  // 餘額（正 = 多付應收，負 = 少付應給）
-  const balances = payers.map(p => ({ name: p, paid: paid[p], balance: Math.round(paid[p] - perPerson) }))
+  // 每人應付（依份數比例）
+  const fairShare = p => total * getShare(p) / totalShares
+  const balances = payers.map(p => ({
+    name: p, paid: paid[p],
+    shouldPay: fairShare(p),
+    balance: Math.round(paid[p] - fairShare(p)),
+    pct: Math.round(getShare(p) / totalShares * 100)
+  }))
 
-  // 最佳化轉帳：最大債主配最大債務人
+  // 最佳化轉帳
   const cred = balances.filter(b => b.balance > 0).map(b => ({ ...b, rem: b.balance })).sort((a,b) => b.rem - a.rem)
   const debt = balances.filter(b => b.balance < 0).map(b => ({ ...b, rem: -b.balance })).sort((a,b) => b.rem - a.rem)
   const transfers = []
@@ -1028,13 +1047,39 @@ function renderSettlement() {
   }
 
   const fmtT = n => Math.round(n * rate).toLocaleString()
+  const isEqual = payers.every(p => getShare(p) === 1)
 
   el.innerHTML = `
-    <div class="stl-section-label">每人費用明細</div>
+    <div class="stl-section-label">分攤比例</div>
+    <div class="stl-card">
+      ${payers.map(p => {
+        const s = getShare(p)
+        const pct = Math.round(s / totalShares * 100)
+        return `<div class="stl-row">
+          <span class="stl-name">${esc(p)}</span>
+          <div style="display:flex;align-items:center;gap:10px">
+            <span style="font-size:12px;color:var(--text2);min-width:32px;text-align:right">${pct}%</span>
+            <div class="stl-stepper">
+              <button class="stl-step-btn" data-p="${esc(p)}" data-d="-0.5" onclick="updatePayerShare(this.dataset.p,parseFloat(this.dataset.d))">−</button>
+              <span class="stl-step-val">${s % 1 === 0 ? s : s.toFixed(1)}</span>
+              <button class="stl-step-btn" data-p="${esc(p)}" data-d="0.5" onclick="updatePayerShare(this.dataset.p,parseFloat(this.dataset.d))">＋</button>
+            </div>
+          </div>
+        </div>`
+      }).join('')}
+      ${!isEqual ? `<div class="stl-footer" style="justify-content:flex-end">
+        <button onclick="resetShares()" style="font-size:12px;color:var(--accent)">重設為平均</button>
+      </div>` : ''}
+    </div>
+
+    <div class="stl-section-label" style="margin-top:20px">每人費用明細</div>
     <div class="stl-card">
       ${balances.map(b => `
         <div class="stl-row">
-          <span class="stl-name">${esc(b.name)}</span>
+          <div>
+            <div class="stl-name">${esc(b.name)}</div>
+            <div style="font-size:11px;color:var(--text2)">應付 ${fmt(Math.round(b.shouldPay))}</div>
+          </div>
           <div class="stl-amounts">
             <span class="stl-paid">付出 ${fmt(b.paid)}</span>
             <span class="stl-balance ${b.balance > 0 ? 'stl-pos' : b.balance < 0 ? 'stl-neg' : 'stl-zero'}">
@@ -1044,7 +1089,7 @@ function renderSettlement() {
         </div>`).join('')}
       <div class="stl-footer">
         <span>總計 ${fmt(total)}</span>
-        <span>每人應付 ${fmt(Math.round(perPerson))}　NT$${fmtT(perPerson)}</span>
+        <span style="color:var(--text2)">NT$${fmtT(total)}</span>
       </div>
     </div>
 
@@ -1066,6 +1111,12 @@ function renderSettlement() {
             </div>`).join('')}
         </div>`}
   `
+}
+
+function resetShares() {
+  settings.payerShares = {}
+  save()
+  renderSettlement()
 }
 
 // ── Receipt scanner ───────────────────────────────────────────────
