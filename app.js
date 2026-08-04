@@ -1311,13 +1311,18 @@ function forceUpdate() {
 }
 
 function confirmResetSample() {
-  showConfirmDialog('重置為範例資料？', '目前資料將被清除，並載入範例', () => {
+  const hint = isFirebaseReady() ? '目前資料將被清除（含 Firebase），並載入範例' : '目前資料將被清除，並載入範例'
+  showConfirmDialog('重置為範例資料？', hint, () => {
     localStorage.removeItem('app_used')
     expenses = []
-    save()
     loadSampleData()
-    renderExpenses()
-    showToast('已重置為範例資料')
+    if (isFirebaseReady()) {
+      fsReplaceAll(expenses).then(() => showToast('已重置為範例資料'))
+    } else {
+      save()
+      renderExpenses()
+      showToast('已重置為範例資料')
+    }
   })
 }
 
