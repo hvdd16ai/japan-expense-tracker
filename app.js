@@ -245,6 +245,9 @@ function disconnectFirebase() {
   document.getElementById('setting-fbkey').value = ''
   document.getElementById('setting-fbproject').value = ''
   document.getElementById('setting-tripid').value = ''
+  document.getElementById('setting-fbkey').disabled = false
+  document.getElementById('setting-fbproject').disabled = false
+  document.getElementById('setting-tripid').disabled = false
   updateFirebaseStatus('未連接')
   showToast('已斷線，資料改為本機儲存')
 }
@@ -689,10 +692,14 @@ function renderSettings() {
   renderPayerList()
   renderCardList()
   const cfg = settings.firebaseConfig || {}
+  const connected = isFirebaseReady()
   document.getElementById('setting-fbkey').value = cfg.apiKey || ''
   document.getElementById('setting-fbproject').value = cfg.projectId || ''
   document.getElementById('setting-tripid').value = settings.tripId || ''
-  updateFirebaseStatus(isFirebaseReady() ? '已連接 ✓' : '未連接')
+  document.getElementById('setting-fbkey').disabled = connected
+  document.getElementById('setting-fbproject').disabled = connected
+  document.getElementById('setting-tripid').disabled = connected
+  updateFirebaseStatus(connected ? '已連接 ✓' : '未連接')
 }
 
 function updateRateHint() {
