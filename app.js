@@ -1311,17 +1311,37 @@ function forceUpdate() {
 }
 
 function confirmClear() {
-  const pwd = prompt('請輸入密碼以清除所有資料：')
-  if (pwd === null) return
-  if (pwd !== '594677') { showToast('密碼錯誤'); return }
-  if (isFirebaseReady()) {
-    fsClearAll().then(() => showToast('已清除'))
-  } else {
-    expenses = []
-    save()
-    renderExpenses()
-    showToast('已清除')
-  }
+  showConfirmDialog('確定要清除所有記帳資料？', '此操作無法復原', () => {
+    if (isFirebaseReady()) {
+      fsClearAll().then(() => showToast('已清除'))
+    } else {
+      expenses = []
+      save()
+      renderExpenses()
+      showToast('已清除')
+    }
+  })
+}
+
+function showConfirmDialog(title, msg, onConfirm) {
+  const overlay = document.createElement('div')
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9999;display:flex;align-items:flex-end;justify-content:center;padding:0 0 40px'
+  overlay.innerHTML = `
+    <div style="background:var(--card);border-radius:var(--radius);width:calc(100% - 32px);max-width:400px;overflow:hidden">
+      <div style="padding:20px 16px 12px;text-align:center;border-bottom:1px solid var(--sep)">
+        <div style="font-size:17px;font-weight:700;margin-bottom:6px">${esc(title)}</div>
+        <div style="font-size:14px;color:var(--text2)">${esc(msg)}</div>
+      </div>
+      <div style="display:flex">
+        <button id="cdlg-cancel" style="flex:1;padding:16px;font-size:17px;color:var(--accent);border-right:1px solid var(--sep)">取消</button>
+        <button id="cdlg-confirm" style="flex:1;padding:16px;font-size:17px;font-weight:700;color:var(--danger)">清除</button>
+      </div>
+    </div>`
+  document.body.appendChild(overlay)
+  const close = () => overlay.remove()
+  overlay.querySelector('#cdlg-cancel').onclick = close
+  overlay.querySelector('#cdlg-confirm').onclick = () => { close(); onConfirm() }
+  overlay.onclick = e => { if (e.target === overlay) close() }
 }
 
 function showToast(msg) {
