@@ -77,8 +77,8 @@ function updateFirebaseStatus(msg) {
   const connected = isFirebaseReady()
   const inviteWrap = document.getElementById('invite-btn-wrap')
   if (inviteWrap) inviteWrap.style.display = connected ? '' : 'none'
-  const syncBtn = document.getElementById('btn-sync')
-  if (syncBtn) syncBtn.style.display = connected ? '' : 'none'
+  const syncBar = document.getElementById('sync-bar')
+  if (syncBar) syncBar.style.display = connected ? 'flex' : 'none'
 }
 
 function generateInviteLink() {
@@ -178,6 +178,8 @@ function setupRealtimeSync() {
     const t = new Date()
     const ts = `${String(t.getHours()).padStart(2,'0')}:${String(t.getMinutes()).padStart(2,'0')}`
     updateFirebaseStatus(`已連接 ✓  ${ts}`)
+    const syncText = document.getElementById('sync-bar-text')
+    if (syncText) syncText.textContent = `已同步  ${ts}　點此手動重整`
   }, err => {
     showToast('同步失敗：' + err.message)
     updateFirebaseStatus('同步失敗')

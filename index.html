@@ -21,12 +21,14 @@
   <div class="tab-content" id="tab-expenses">
     <header class="page-header">
       <h1>費用清單</h1>
-      <div style="display:flex;gap:8px;align-items:center">
-        <button class="btn-icon" id="btn-sync" onclick="manualSync()" aria-label="同步" style="display:none;font-size:18px">🔄</button>
+      <div style="display:flex;gap:8px">
         <button class="btn-icon btn-icon-scan" onclick="openScanModal()" aria-label="掃描收據">📷</button>
         <button class="btn-icon" onclick="openAddModal()" aria-label="新增費用">＋</button>
       </div>
     </header>
+    <div id="sync-bar" class="sync-bar" onclick="manualSync()">
+      <span>🔄</span><span id="sync-bar-text">點此同步</span>
+    </div>
     <div class="sticky-toolbar">
       <div class="search-bar">
         <span class="search-icon">🔍</span>

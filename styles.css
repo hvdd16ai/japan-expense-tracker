@@ -78,7 +78,13 @@ input, select, textarea { font-family: var(--font); }
   background: var(--accent); color: #fff;
   font-size: 20px; line-height: 1; display: flex; align-items: center; justify-content: center;
 }
-.btn-icon-scan { background: var(--surface); font-size: 17px; }
+.btn-icon-scan { font-size: 17px; }
+.sync-bar {
+  display: none; align-items: center; justify-content: center; gap: 6px;
+  padding: 6px 16px; background: rgba(0,118,214,0.08);
+  font-size: 12px; color: var(--accent); cursor: pointer; user-select: none;
+}
+.sync-bar:active { background: rgba(0,118,214,0.15); }
 
 /* ── Summary bar ─────────────────────────────────────────────── */
 .stats-filter-wrap { background: var(--bg); padding: 8px 0 0; }
