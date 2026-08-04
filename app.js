@@ -240,7 +240,7 @@ function disconnectFirebase() {
   db = null
   settings.firebaseConfig = { apiKey: '', projectId: '' }
   settings.tripId = ''
-  save()
+  save()  // 斷線前把記憶體中最新的 Firebase 資料存到 localStorage
   document.getElementById('setting-fbkey').value = ''
   document.getElementById('setting-fbproject').value = ''
   document.getElementById('setting-tripid').value = ''
@@ -519,15 +519,16 @@ function toggleExpand(id) {
 }
 
 function deleteExpense(id) {
-  if (!confirm('確定要刪除這筆記錄？')) return
-  if (isFirebaseReady()) {
-    fsDelete(id)
-  } else {
-    expenses = expenses.filter(e => e.id !== id)
-    save()
-    renderExpenses()
-  }
-  showToast('已刪除')
+  showConfirmDialog('確定要刪除這筆記錄？', '', () => {
+    if (isFirebaseReady()) {
+      fsDelete(id)
+    } else {
+      expenses = expenses.filter(e => e.id !== id)
+      save()
+      renderExpenses()
+    }
+    showToast('已刪除')
+  })
 }
 
 // ── Render: Stats ────────────────────────────────────────────────
