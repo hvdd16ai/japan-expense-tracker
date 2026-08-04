@@ -1005,10 +1005,27 @@ function updatePayerShare(payer, delta) {
   renderSettlement()
 }
 
+function addToSettlement(name) {
+  if (!settings.settlementExtra) settings.settlementExtra = []
+  if (!settings.settlementExtra.includes(name)) settings.settlementExtra.push(name)
+  save()
+  renderSettlement()
+}
+
+function removeFromSettlement(name) {
+  if (!settings.settlementExtra) settings.settlementExtra = []
+  settings.settlementExtra = settings.settlementExtra.filter(n => n !== name)
+  save()
+  renderSettlement()
+}
+
 function renderSettlement() {
   const el = document.getElementById('settlement-content')
   if (!el) return
-  const payers = [...new Set(expenses.map(e => e.payer).filter(Boolean))]
+  const extra = settings.settlementExtra || []
+  const expensePayers = [...new Set(expenses.map(e => e.payer).filter(Boolean))]
+  const payers = [...new Set([...expensePayers, ...extra])]
+  const notIncluded = settings.payers.filter(p => !payers.includes(p))
   const rate = parseFloat(settings.exchangeRate) || 0.22
 
   if (expenses.length === 0) {
@@ -1050,7 +1067,23 @@ function renderSettlement() {
   const isEqual = payers.every(p => getShare(p) === 1)
 
   el.innerHTML = `
-    <div class="stl-section-label">分攤比例</div>
+    ${notIncluded.length > 0 ? `
+    <div class="stl-section-label">加入分帳</div>
+    <div class="stl-card" style="padding:12px 16px;display:flex;flex-wrap:wrap;gap:8px">
+      ${notIncluded.map(p => `
+        <button class="stl-add-btn" data-p="${esc(p)}" onclick="addToSettlement(this.dataset.p)">${esc(p)} ＋</button>
+      `).join('')}
+    </div>` : ''}
+
+    ${extra.length > 0 ? `
+    <div class="stl-section-label" style="margin-top:16px">已加入（無記帳）</div>
+    <div class="stl-card" style="padding:12px 16px;display:flex;flex-wrap:wrap;gap:8px">
+      ${extra.filter(p => !expensePayers.includes(p)).map(p => `
+        <button class="stl-add-btn stl-add-active" data-p="${esc(p)}" onclick="removeFromSettlement(this.dataset.p)">${esc(p)} ✕</button>
+      `).join('')}
+    </div>` : ''}
+
+    <div class="stl-section-label" style="margin-top:${notIncluded.length > 0 || extra.length > 0 ? 16 : 0}px">分攤比例</div>
     <div class="stl-card">
       ${payers.map(p => {
         const s = getShare(p)
