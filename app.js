@@ -1008,7 +1008,7 @@ function updatePayerShare(payer, delta) {
 function renderSettlement() {
   const el = document.getElementById('settlement-content')
   if (!el) return
-  const payers = settings.payers
+  const payers = [...new Set(expenses.map(e => e.payer).filter(Boolean))]
   const rate = parseFloat(settings.exchangeRate) || 0.22
 
   if (expenses.length === 0) {
