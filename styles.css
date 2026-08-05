@@ -213,7 +213,7 @@ input, select, textarea { font-family: var(--font); }
   transition: max-height 0.25s ease, padding 0.25s ease;
 }
 .expense-card.expanded .expense-details {
-  max-height: 600px;
+  max-height: 2000px;
   padding: 10px 16px 14px;
 }
 
