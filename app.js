@@ -1275,17 +1275,31 @@ async function callGemini(base64Array) {
   const key = settings.geminiApiKey
   const multi = base64Array.length > 1
   const prompt = `這是日本收據照片${multi ? `（共 ${base64Array.length} 張，為同一張收據的不同部分，請合併所有照片的資訊一起辨識）` : ''}，請盡力提取所有資訊。
-規則：
+
+【最重要規則】最終驗算：items各項(quantity×price)加總 + tax8 + tax10 + serviceCharge - discounts - taxFree，必須等於 total（收據最終實付金額）。如果不符請調整。
+
+【稅金填寫規則 — 最關鍵】
+日本收據有兩種稅金顯示方式，必須正確區分：
+
+▶ 外税（税抜き）：商品單價是未含稅的金額，稅金是額外加上去的
+  → 判斷特徵：商品旁標示「税抜」、「(税抜)」，或底部有「消費税」金額需要加上去才等於合計
+  → 處理方式：price 填稅前單價，tax8/tax10 填實際稅額
+
+▶ 内税（税込）：商品單價已含稅，底部的「内消費税」只是說明含在其中的稅額
+  → 判斷特徵：收據底部標示「内消費税」「（内訳）」「税込」「うち消費税」，或商品旁有「※」但合計直接就是商品加總
+  → 處理方式：price 填含稅單價，tax8=0、tax10=0（不要把内消費税填入）
+
+便利商店（コンビニ）、藥妝店、服飾店、超市：幾乎都是内税 → tax8/tax10=0
+餐廳服務費另計：serviceCharge 才填
+
+其他規則：
 - 能辨識的資訊請認真判斷填入；完全無法確定的欄位請留空（"" 或 [] 或 0），不要猜測
 - 商店名稱通常在收據最上方
 - 商品名稱翻譯成繁體中文，後面括號保留日文原文，例：「梅子飯糰（おにぎり 梅）」
 - quantity 為購買數量（整數，預設 1），price 為單價（正整數日幣）
 - discounts：折扣、優惠券、點數折抵（amount 為正整數折抵金額）
-- tax8：消費税 8% 的稅額（食品飲料，收據上標示「※」或「軽減税率」的商品稅金）
-- tax10：消費税 10% 的稅額（一般商品稅金）
-- taxFree：免税額（外國旅客免税購物的折抵金額，收據上顯示「免税額」）
-- serviceCharge：服務費（レストランのサービス料，正整數）
-- total 填最終實付金額
+- taxFree：免税額（外國旅客免税購物折抵，收據上顯示「免税額」）
+- total 填收據最終實付金額
 
 只回傳純 JSON，不要有其他文字：
 {"storeName":"","items":[{"name":"","quantity":1,"price":0,"category":"餐飲"}],"discounts":[{"name":"","amount":0}],"tax8":0,"tax10":0,"taxFree":0,"serviceCharge":0,"total":0}
