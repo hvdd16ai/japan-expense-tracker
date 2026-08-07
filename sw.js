@@ -1,4 +1,4 @@
-const CACHE = 'japan-tracker-v24' // 更新檔案後記得改這個版本號
+const CACHE = 'japan-tracker-v25' // 更新檔案後記得改這個版本號
 const ASSETS = ['./', './index.html', './styles.css', './app.js', './manifest.json', './icon.svg', './icon-192.png', './icon-512.png']
 
 self.addEventListener('install', e => {

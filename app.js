@@ -1296,7 +1296,8 @@ async function callGemini(base64Array) {
 - 能辨識的資訊請認真判斷填入；完全無法確定的欄位請留空（"" 或 [] 或 0），不要猜測
 - 商店名稱通常在收據最上方
 - 商品名稱翻譯成繁體中文，後面括號保留日文原文，例：「梅子飯糰（おにぎり 梅）」
-- quantity 為購買數量（整數，預設 1），price 為單價（正整數日幣）
+- quantity 為購買數量（整數，預設 1），price 為【單價】（正整數日幣）
+  ⚠️ 重要：price 必須是單價，不是行小計。若收據顯示「¥8,400 ×2」，則 price=4200、quantity=2，因為 App 會自動計算 price×quantity。絕對不能把行小計填入 price 再乘以 quantity，否則金額會翻倍
 - discounts：折扣、優惠券、點數折抵（amount 為正整數折抵金額）
 - taxFree：免税額（外國旅客免税購物折抵，收據上顯示「免税額」）
 - total 填收據最終實付金額
