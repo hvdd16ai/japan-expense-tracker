@@ -1300,9 +1300,10 @@ async function callGemini(base64Array) {
 - discounts：折扣、優惠券、點數折抵（amount 為正整數折抵金額）
 - taxFree：免税額（外國旅客免税購物折抵，收據上顯示「免税額」）
 - total 填收據最終實付金額
+- date：收據上的日期，格式 YYYY-MM-DD（例：2026-08-07）；若無法辨識則填空字串 ""
 
 只回傳純 JSON，不要有其他文字：
-{"storeName":"","items":[{"name":"","quantity":1,"price":0,"category":"餐飲"}],"discounts":[{"name":"","amount":0}],"tax8":0,"tax10":0,"taxFree":0,"serviceCharge":0,"total":0}
+{"storeName":"","date":"","items":[{"name":"","quantity":1,"price":0,"category":"餐飲"}],"discounts":[{"name":"","amount":0}],"tax8":0,"tax10":0,"taxFree":0,"serviceCharge":0,"total":0}
 category 判斷規則（每筆商品獨立判斷，同一張收據可以有不同 category）：
 - 餐飲：食物、飲料、便利商店食品、餐廳、咖啡廳、超市食品
 - 交通：電車、巴士、新幹線、計程車、IC卡儲值、停車費
@@ -1372,7 +1373,7 @@ function renderScanReview(result) {
       </div>` : ''}
   `
 
-  document.getElementById('review-date').value = todayStr()
+  document.getElementById('review-date').value = result.date || todayStr()
   populateReviewSelects()
 }
 
