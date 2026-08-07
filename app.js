@@ -1367,10 +1367,25 @@ function renderScanReview(result) {
     ${result.tax10 > 0 ? `<div class="review-item"><div class="review-name" style="color:var(--text2)">消費税 10%</div><div class="review-price" style="color:var(--text2)">+${fmt(result.tax10)}</div></div>` : ''}
     ${result.serviceCharge > 0 ? `<div class="review-item"><div class="review-name" style="color:var(--text2)">服務費</div><div class="review-price" style="color:var(--text2)">+${fmt(result.serviceCharge)}</div></div>` : ''}
     ${result.taxFree > 0 ? `<div class="review-item"><div class="review-name review-discount">免税額</div><div class="review-price review-discount">−${fmt(result.taxFree)}</div></div>` : ''}
-    ${result.total > 0 ? `
-      <div style="display:flex;justify-content:space-between;font-weight:700;padding:10px 0 0;font-size:15px">
-        <span>合計</span><span>${fmt(result.total)}</span>
-      </div>` : ''}
+    ${result.total > 0 ? (() => {
+      const itemSum = items.reduce((s, it) => s + (parseFloat(it.price)||0)*(parseInt(it.quantity)||1), 0)
+      const disSum = discounts.reduce((s, d) => s + (parseFloat(d.amount)||0), 0)
+      const calc = itemSum + (result.tax8||0) + (result.tax10||0) + (result.serviceCharge||0) - disSum - (result.taxFree||0)
+      const diff = calc - result.total
+      const ok = Math.abs(diff) < 2
+      return `
+      <div style="border-top:1px solid var(--border);margin-top:8px;padding-top:10px">
+        <div style="display:flex;justify-content:space-between;font-weight:700;font-size:15px">
+          <span>收據總額</span><span>${fmt(result.total)}</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:13px;color:var(--text2);margin-top:4px">
+          <span>計算合計</span><span>${fmt(Math.round(calc))}</span>
+        </div>
+        ${!ok ? `<div style="margin-top:8px;padding:8px 12px;border-radius:8px;background:rgba(220,53,69,0.12);color:#c0392b;font-size:13px">
+          ⚠️ 計算合計與收據總額差 ${fmt(Math.abs(Math.round(diff)))}，請確認明細是否正確
+        </div>` : `<div style="margin-top:6px;font-size:12px;color:#27ae60">✓ 金額核對一致</div>`}
+      </div>`
+    })() : ''}
   `
 
   document.getElementById('review-date').value = result.date || todayStr()
