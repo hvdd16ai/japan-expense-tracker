@@ -1334,9 +1334,12 @@ async function callGemini(base64Array) {
 只回傳純 JSON，不要有任何其他文字或說明：
 {"storeName":"","date":"","items":[{"name":"","quantity":1,"price":0,"category":"餐飲"}],"discounts":[{"name":"","amount":0,"itemIndex":-1}],"tax8":0,"tax10":0,"taxFree":0,"serviceCharge":0,"total":0}
 
-discounts 的 itemIndex 規則：
-- 若折扣明確針對某一商品（例如「割引」「会員割引」緊跟在某商品後）→ itemIndex 填該商品在 items 中的索引（0 開始）
-- 若是整張收據的折扣（優惠券、點數折抵、全館折扣）→ itemIndex 填 -1
+discounts 的 itemIndex 規則（非常重要）：
+- 判斷方法：看折扣行在收據上的「出現位置」
+  → 若折扣行緊接在某商品行之後（下一行就是折扣，再下一行才是別的商品）→ 這個折扣屬於那個商品，itemIndex 填該商品的索引（0 開始）
+  → 可用金額驗算確認：商品價格 × 折扣率 ≈ 折扣金額（例如 ¥350 × 30% = ¥105）
+- 若是整張收據的折扣（優惠券代碼、點數折抵、全館折扣，出現在所有商品之後）→ itemIndex 填 -1
+- 範例：收據順序「ハムカツ ¥350 → 割引30% -¥105 → 焼鳥 ¥390」→ 割引屬於ハムカツ，itemIndex=1（ハムカツ在 items 第2位，索引1）
 
 category 只能用以下其中一個（每筆商品獨立判斷）：
 - 餐飲：食物、飲料、便利商店食品、餐廳、咖啡廳、超市食品
