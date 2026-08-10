@@ -1450,6 +1450,13 @@ function confirmScan() {
       .filter(n => !isNaN(n))
   )
 
+  // 建立原始索引 → 新索引的對應表（未勾選的品項被過濾掉後索引會位移）
+  const origToNew = {}
+  let newIdx = 0
+  ;(scanResult.items || []).forEach((_, i) => {
+    if (checkedIndices.has(i)) { origToNew[i] = newIdx++ }
+  })
+
   const items = (scanResult.items || [])
     .filter((_, i) => checkedIndices.has(i))
     .map(it => ({
@@ -1459,10 +1466,11 @@ function confirmScan() {
       category: it.category || '其他',
     }))
 
-  const discounts = (scanResult.discounts || []).map(d => ({
-    name:   d.name || '折扣',
-    amount: parseFloat(d.amount) || 0,
-  })).filter(d => d.amount > 0)
+  const discounts = (scanResult.discounts || []).map(d => {
+    const origIdx = d.itemIndex ?? -1
+    const mappedIdx = (origIdx >= 0 && origToNew[origIdx] !== undefined) ? origToNew[origIdx] : -1
+    return { name: d.name || '折扣', amount: parseFloat(d.amount) || 0, itemIndex: mappedIdx }
+  }).filter(d => d.amount > 0)
 
   if (items.length === 0) { showToast('請至少勾選一項商品'); return }
 
