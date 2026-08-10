@@ -431,21 +431,29 @@ function renderExpenseCard(exp) {
     <div class="expense-details">
       ${items.length > 0 ? `
         <div class="detail-items">
-          ${items.map(function(it) {
+          ${items.map(function(it, i) {
             var qty = parseInt(it.quantity) || 1
             var total = itemTotal(it)
+            var itemDis = discounts.filter(function(d) { return d.itemIndex === i })
+            var genDis = i === items.length - 1 ? discounts.filter(function(d) { return (d.itemIndex ?? -1) === -1 }) : []
             return '<div class="detail-item">' +
               '<span class="detail-name">' + esc(it.name) + '</span>' +
               (qty > 1 ? '<span class="detail-cat">\xd7' + qty + '</span>' : '') +
               '<span class="detail-cat">' + it.category + '</span>' +
               '<span class="detail-price">' + (qty > 1 ? fmt(it.price) + '\xd7' + qty + '=' : '') + fmt(total) + '</span>' +
-              '</div>'
-          }).join('')}
-          ${discounts.map(function(d) {
-            return '<div class="detail-item">' +
-              '<span class="detail-name detail-discount">− ' + esc(d.name) + '</span>' +
-              '<span class="detail-price detail-discount">−' + fmt(d.amount) + '</span>' +
-              '</div>'
+              '</div>' +
+              itemDis.map(function(d) {
+                return '<div class="detail-item" style="padding-left:12px">' +
+                  '<span class="detail-name detail-discount" style="font-size:12px">↳ ' + esc(d.name) + '</span>' +
+                  '<span class="detail-price detail-discount">−' + fmt(d.amount) + '</span>' +
+                  '</div>'
+              }).join('') +
+              genDis.map(function(d) {
+                return '<div class="detail-item">' +
+                  '<span class="detail-name detail-discount">− ' + esc(d.name) + '</span>' +
+                  '<span class="detail-price detail-discount">−' + fmt(d.amount) + '</span>' +
+                  '</div>'
+              }).join('')
           }).join('')}
           ${exp.tax8 > 0 ? '<div class="detail-item"><span class="detail-name" style="color:var(--text2)">消費税 8%</span><span class="detail-price" style="color:var(--text2)">+' + fmt(exp.tax8) + '</span></div>' : ''}
           ${exp.tax10 > 0 ? '<div class="detail-item"><span class="detail-name" style="color:var(--text2)">消費税 10%</span><span class="detail-price" style="color:var(--text2)">+' + fmt(exp.tax10) + '</span></div>' : ''}
@@ -1324,7 +1332,11 @@ async function callGemini(base64Array) {
 ○ 正確：内税時 tax8=tax10=0，商品價格直接是含稅的售價
 
 只回傳純 JSON，不要有任何其他文字或說明：
-{"storeName":"","date":"","items":[{"name":"","quantity":1,"price":0,"category":"餐飲"}],"discounts":[{"name":"","amount":0}],"tax8":0,"tax10":0,"taxFree":0,"serviceCharge":0,"total":0}
+{"storeName":"","date":"","items":[{"name":"","quantity":1,"price":0,"category":"餐飲"}],"discounts":[{"name":"","amount":0,"itemIndex":-1}],"tax8":0,"tax10":0,"taxFree":0,"serviceCharge":0,"total":0}
+
+discounts 的 itemIndex 規則：
+- 若折扣明確針對某一商品（例如「割引」「会員割引」緊跟在某商品後）→ itemIndex 填該商品在 items 中的索引（0 開始）
+- 若是整張收據的折扣（優惠券、點數折抵、全館折扣）→ itemIndex 填 -1
 
 category 只能用以下其中一個（每筆商品獨立判斷）：
 - 餐飲：食物、飲料、便利商店食品、餐廳、咖啡廳、超市食品
@@ -1371,16 +1383,23 @@ function renderScanReview(result) {
   const items = result.items || []
   const discounts = result.discounts || []
 
+  const genDiscounts = discounts.filter(d => (d.itemIndex ?? -1) === -1)
   document.getElementById('review-items').innerHTML = `
     ${items.map((it, i) => {
       const qty = parseInt(it.quantity) || 1
       const tot = (parseFloat(it.price) || 0) * qty
+      const itemDis = discounts.filter(d => d.itemIndex === i)
       return `<div class="review-item" id="ri-${i}">
         <div class="review-check checked" onclick="toggleReviewItem(${i})">✓</div>
         <div class="review-name">${esc(it.name)}${qty > 1 ? ` <span style="color:var(--text2)">×${qty}</span>` : ''} <span style="font-size:11px;color:var(--text2)">${esc(it.category)}</span></div>
         <div class="review-price">${fmt(tot)}</div>
-      </div>`}).join('')}
-    ${discounts.map(d => `
+      </div>
+      ${itemDis.map(d => `
+      <div class="review-item" style="padding-left:28px">
+        <div class="review-name review-discount" style="font-size:13px">↳ ${esc(d.name)}</div>
+        <div class="review-price review-discount">−${fmt(d.amount)}</div>
+      </div>`).join('')}`}).join('')}
+    ${genDiscounts.map(d => `
       <div class="review-item">
         <div class="review-name review-discount">− ${esc(d.name)}</div>
         <div class="review-price review-discount">−${fmt(d.amount)}</div>
