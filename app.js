@@ -1446,6 +1446,44 @@ function confirmScan() {
     _expanded:     false,
   }
 
+  // 重複偵測：比對店名 + 日期
+  const normName = s => (s || '').trim().toLowerCase()
+  const dupExp = expenses.find(e =>
+    normName(e.storeName) === normName(exp.storeName) && e.date === exp.date
+  )
+
+  if (dupExp) {
+    const itemsSig = e => JSON.stringify(
+      (e.items || []).map(it => `${it.name}|${it.price}|${it.quantity||1}`).sort()
+    )
+    const sameTotal = dupExp.totalAmount === exp.totalAmount
+    const sameItems = itemsSig(dupExp) === itemsSig(exp)
+
+    if (sameTotal && sameItems) {
+      showToast('此收據已新增過，金額與明細相同')
+      return
+    }
+
+    showConfirmDialog(
+      '發現相似收據',
+      `「${exp.storeName}」在 ${exp.date} 已有一筆記錄（¥${(dupExp.totalAmount||0).toLocaleString()}），與本次掃描（¥${exp.totalAmount.toLocaleString()}）不同。\n\n是否更新為最新掃描的資料？`,
+      () => {
+        exp.id = dupExp.id
+        if (expandedDates) expandedDates.add(exp.date)
+        if (isFirebaseReady()) {
+          fsSave(exp)
+        } else {
+          const idx = expenses.findIndex(e => e.id === dupExp.id)
+          if (idx >= 0) expenses[idx] = exp
+          save(); renderExpenses()
+        }
+        closeModal('modal-scan')
+        showToast('已更新為最新掃描資料')
+      }
+    )
+    return
+  }
+
   if (expandedDates) expandedDates.add(exp.date)
   if (isFirebaseReady()) {
     fsSave(exp)
