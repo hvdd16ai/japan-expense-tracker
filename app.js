@@ -1489,14 +1489,24 @@ function confirmScan() {
     _expanded:     false,
   }
 
-  // 重複偵測：同日期 + (金額相同 OR 店名有共同關鍵字)
+  // 重複偵測：同日期 + (金額相同 OR 店名關鍵字重疊) + 品項內容有重疊
   const nameKeywords = s => (s || '').toUpperCase().match(/[A-Z0-9぀-鿿]{3,}/g) || []
   const shareKeyword = (a, b) => nameKeywords(a).some(w => b.toUpperCase().includes(w))
+  const itemSimilarity = (a, b) => {
+    const setA = new Set((a.items || []).map(it => (it.name || '').slice(0, 6)))
+    const setB = new Set((b.items || []).map(it => (it.name || '').slice(0, 6)))
+    if (setA.size === 0 && setB.size === 0) return 1
+    if (setA.size === 0 || setB.size === 0) return 0
+    const common = [...setA].filter(n => setB.has(n)).length
+    return common / Math.max(setA.size, setB.size)
+  }
   const dupExp = expenses.find(e => {
     if (e.date !== exp.date) return false
     const sameTotal = e.totalAmount === exp.totalAmount
     const sameName = shareKeyword(e.storeName, exp.storeName) || shareKeyword(exp.storeName, e.storeName)
-    return sameTotal || sameName
+    if (!sameTotal && !sameName) return false
+    // 店名或金額相符，再看品項相似度是否 >= 40%
+    return itemSimilarity(e, exp) >= 0.4
   })
 
   if (dupExp) {
