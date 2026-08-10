@@ -785,7 +785,8 @@ function populateCardSelect(selectId) {
 
 function onPaymentChange(paymentId, cardRowId, cardSelectId) {
   const isCard = document.getElementById(paymentId).value === '信用卡'
-  document.getElementById(cardRowId).style.display = isCard ? '' : 'none'
+  const row = document.getElementById(cardRowId)
+  if (row) row.style.display = isCard ? 'block' : 'none'
   if (isCard) populateCardSelect(cardSelectId)
 }
 
@@ -866,7 +867,7 @@ function openEditModal(id) {
   document.getElementById('f-taxfree').value = exp.taxFree || ''
   document.getElementById('f-service').value = exp.serviceCharge || ''
   if (exp.paymentMethod === '信用卡') {
-    document.getElementById('f-card-row').style.display = ''
+    document.getElementById('f-card-row').style.display = 'block'
     populateCardSelect('f-card')
     document.getElementById('f-card').value = exp.card || ''
   } else {
@@ -1774,6 +1775,13 @@ function init() {
   if (!hasFirebase && expenses.length === 0 && !localStorage.getItem('app_used')) loadSampleData()
   renderExpenses()
   initSettingListeners()
+  // 額外綁定付款方式切換，確保 iOS 也能正確顯示/隱藏信用卡欄位
+  const bindPayment = (payId, rowId, cardId) => {
+    const el = document.getElementById(payId)
+    if (el) el.addEventListener('change', () => onPaymentChange(payId, rowId, cardId))
+  }
+  bindPayment('f-payment', 'f-card-row', 'f-card')
+  bindPayment('review-payment', 'review-card-row', 'review-card')
   if (hasFirebase) initFirebase()
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('./sw.js').catch(() => {})
