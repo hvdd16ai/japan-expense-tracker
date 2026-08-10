@@ -1446,11 +1446,14 @@ function confirmScan() {
     _expanded:     false,
   }
 
-  // 重複偵測：比對店名 + 日期
+  // 重複偵測：店名+日期 或 金額+日期
   const normName = s => (s || '').trim().toLowerCase()
-  const dupExp = expenses.find(e =>
-    normName(e.storeName) === normName(exp.storeName) && e.date === exp.date
-  )
+  const dupExp = expenses.find(e => {
+    if (e.date !== exp.date) return false
+    const sameName = normName(e.storeName) === normName(exp.storeName)
+    const sameTotal = e.totalAmount === exp.totalAmount
+    return sameName || sameTotal
+  })
 
   if (dupExp) {
     const itemsSig = e => JSON.stringify(
