@@ -1661,7 +1661,7 @@ function exportCSV() {
 function forceUpdate() {
   showToast('更新中…請稍候')
   sessionStorage.setItem('force_update_stage2', '1')
-  const reload = () => location.reload(true)
+  const reload = () => { location.href = location.pathname + '?_=' + Date.now() }
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.getRegistrations()
       .then(regs => Promise.all(regs.map(r => r.unregister())))
@@ -1860,10 +1860,19 @@ function init() {
     sessionStorage.removeItem('force_update_stage2')
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.ready
-        .then(() => { showToast('更新完成！'); setTimeout(() => location.reload(true), 800) })
+        .then(() => { showToast('更新完成！'); setTimeout(() => { location.href = location.pathname }, 800) })
         .catch(() => showToast('更新完成！'))
     }
     // 不 return，繼續正常 init 讓資料顯示出來
+  }
+
+  // 顯示目前版本號（從 SW 快取名稱讀取）
+  if ('caches' in window) {
+    caches.keys().then(keys => {
+      const swKey = keys.find(k => k.startsWith('japan-tracker-'))
+      const el = document.getElementById('app-version')
+      if (el && swKey) el.textContent = swKey.replace('japan-tracker-', 'v')
+    })
   }
 
   load()
