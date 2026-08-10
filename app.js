@@ -1489,10 +1489,11 @@ function confirmScan() {
       return
     }
 
-    showConfirmDialog(
+    showDuplicateDialog(
       '發現相似收據',
-      `「${exp.storeName}」在 ${exp.date} 已有一筆記錄（¥${(dupExp.totalAmount||0).toLocaleString()}），與本次掃描（¥${exp.totalAmount.toLocaleString()}）不同。\n\n是否更新為最新掃描的資料？`,
+      `「${exp.storeName || dupExp.storeName}」\n舊記錄：¥${(dupExp.totalAmount||0).toLocaleString()}　新掃描：¥${exp.totalAmount.toLocaleString()}`,
       () => {
+        // 覆蓋：用新資料取代舊筆
         exp.id = dupExp.id
         if (expandedDates) expandedDates.add(exp.date)
         if (isFirebaseReady()) {
@@ -1503,7 +1504,19 @@ function confirmScan() {
           save(); renderExpenses()
         }
         closeModal('modal-scan')
-        showToast('已更新為最新掃描資料')
+        showToast('已覆蓋為最新掃描資料')
+      },
+      () => {
+        // 新增：當作全新一筆
+        if (expandedDates) expandedDates.add(exp.date)
+        if (isFirebaseReady()) {
+          fsSave(exp)
+        } else {
+          expenses.unshift(exp)
+          save(); renderExpenses()
+        }
+        closeModal('modal-scan')
+        showToast('已新增為獨立一筆')
       }
     )
     return
@@ -1647,6 +1660,31 @@ function showConfirmDialog(title, msg, onConfirm) {
   const close = () => overlay.remove()
   overlay.querySelector('#cdlg-cancel').onclick = close
   overlay.querySelector('#cdlg-confirm').onclick = () => { close(); onConfirm() }
+  overlay.onclick = e => { if (e.target === overlay) close() }
+}
+
+function showDuplicateDialog(title, msg, onOverwrite, onAddNew) {
+  const overlay = document.createElement('div')
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9999;display:flex;align-items:flex-end;justify-content:center;padding:0 0 40px'
+  overlay.innerHTML = `
+    <div style="background:var(--card);border-radius:var(--radius);width:calc(100% - 32px);max-width:400px;overflow:hidden">
+      <div style="padding:20px 16px 12px;text-align:center;border-bottom:1px solid var(--sep)">
+        <div style="font-size:17px;font-weight:700;margin-bottom:6px">${esc(title)}</div>
+        <div style="font-size:14px;color:var(--text2);white-space:pre-line">${esc(msg)}</div>
+      </div>
+      <div style="display:flex;border-bottom:1px solid var(--sep)">
+        <button id="dup-cancel" style="flex:1;padding:14px;font-size:16px;color:var(--text2)">取消</button>
+        <button id="dup-overwrite" style="flex:1;padding:14px;font-size:16px;font-weight:600;color:var(--danger);border-left:1px solid var(--sep)">覆蓋</button>
+      </div>
+      <div>
+        <button id="dup-addnew" style="width:100%;padding:14px;font-size:16px;font-weight:600;color:var(--accent)">新增（這是全新一筆）</button>
+      </div>
+    </div>`
+  document.body.appendChild(overlay)
+  const close = () => overlay.remove()
+  overlay.querySelector('#dup-cancel').onclick = close
+  overlay.querySelector('#dup-overwrite').onclick = () => { close(); onOverwrite() }
+  overlay.querySelector('#dup-addnew').onclick = () => { close(); onAddNew() }
   overlay.onclick = e => { if (e.target === overlay) close() }
 }
 
