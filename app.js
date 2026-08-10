@@ -434,8 +434,8 @@ function renderExpenseCard(exp) {
           ${items.map(function(it, i) {
             var qty = parseInt(it.quantity) || 1
             var total = itemTotal(it)
-            var itemDis = discounts.filter(function(d) { return d.itemIndex === i })
-            var genDis = i === items.length - 1 ? discounts.filter(function(d) { return (d.itemIndex ?? -1) === -1 }) : []
+            var itemDis = discounts.filter(function(d) { return d.itemName !== undefined ? d.itemName === it.name : d.itemIndex === i })
+            var genDis = i === items.length - 1 ? discounts.filter(function(d) { return d.itemName !== undefined ? d.itemName === '' : (d.itemIndex ?? -1) === -1 }) : []
             return '<div class="detail-item">' +
               '<span class="detail-name">' + esc(it.name) + '</span>' +
               (qty > 1 ? '<span class="detail-cat">\xd7' + qty + '</span>' : '') +
@@ -1226,20 +1226,19 @@ function showScanStep(n) {
 }
 
 function onFileSelected(e) {
-  const files = [...e.target.files]
-  if (!files.length) return
-  scanFiles = files
+  const newFiles = [...e.target.files]
+  if (!newFiles.length) return
+  scanFiles = [...scanFiles, ...newFiles]   // 累加，不覆蓋
+  e.target.value = ''                       // 清空 input，讓下次同張也能觸發 change
   const wrap = document.getElementById('scan-preview-wrap')
-  wrap.querySelectorAll('img').forEach(img => { if (img.src.startsWith('blob:')) URL.revokeObjectURL(img.src) })
-  wrap.innerHTML = ''
-  files.forEach(f => {
+  newFiles.forEach(f => {
     const img = document.createElement('img')
     img.src = URL.createObjectURL(f)
     img.className = 'scan-preview-thumb'
     wrap.appendChild(img)
   })
   wrap.style.display = 'flex'
-  document.getElementById('scan-count').textContent = files.length > 1 ? `已選 ${files.length} 張` : ''
+  document.getElementById('scan-count').textContent = scanFiles.length > 1 ? `已選 ${scanFiles.length} 張` : ''
   document.getElementById('btn-scan-go').disabled = false
 }
 
@@ -1318,28 +1317,43 @@ async function callGemini(base64Array) {
 
 【判斷 C】serviceCharge：只有收據上有明確「サービス料」「service charge」且是額外加收（不含在商品價格中），才填正整數
 
-【判斷 D】taxFree：外國旅客免税購物，收據顯示「免税額」「免税合計」，填正整數（從合計扣除的金額）
+【判斷 D】taxFree：外國旅客免税購物
+  ⚠️ 絕對不能靠「看到免税字樣就填入 taxFree」，必須用數學決定：
+
+  步驟 1：先假設 taxFree=0，計算 A = Σ(price×qty) - Σ(discounts) + tax8 + tax10 + serviceCharge
+  步驟 2：讀取收據上的「合計」（実際支払い額、お支払い合計）
+  步驟 3：
+    → 若 A ≈ 合計（誤差 ±3 以內）→ taxFree=0，total=合計
+      （收據上任何「免税額」「(内消費税等)」都只是參考資訊，不需扣除）
+    → 若 A - 免税額 ≈ 合計（誤差 ±3 以內）→ taxFree=免税額，total=合計
+      （品項是含税售價，結帳時扣除免税額）
+    → 若兩者都不符 → taxFree=0，先修正品項單價或數量，直到 A ≈ 合計
+
+  ❌ 禁止：看到「(内消費税等) ¥XX」就填 taxFree=XX（此格式是參考資訊，不是要扣的金額）
+  ❌ 禁止：不計算就直接把免税相關數字填入 taxFree
 
 ═══ STEP 4：驗算（必做）═══
 計算：Σ(price×qty) - Σ(discounts) + tax8 + tax10 + serviceCharge - taxFree
-此值必須等於 total（允許 ±1 的四捨五入誤差）
-若不符，重新檢查 STEP 2 的單價是否填錯、STEP 3 的税金判斷是否正確
+此值必須等於 total（允許 ±3 的四捨五入誤差）
+若不符，重新檢查 STEP 2 的單價是否填錯、數量是否正確
 
 ═══ 常見陷阱提醒 ═══
 × 錯誤：把「内消費税 ¥702」填入 tax10=702（内税時絕對不能這樣做）
 × 錯誤：把行小計當 price（例如 2個¥366，把 price 填 366 而非 183）
 × 錯誤：discounts 填點數累積而非實際折抵金額
+× 錯誤：看到「免税額」「(内消費税等)」就直接填 taxFree，沒有先驗算
 ○ 正確：内税時 tax8=tax10=0，商品價格直接是含稅的售價
+○ 正確：taxFree 的值必須經過數學驗證才能填入
 
 只回傳純 JSON，不要有任何其他文字或說明：
-{"storeName":"","date":"","items":[{"name":"","quantity":1,"price":0,"category":"餐飲"}],"discounts":[{"name":"","amount":0,"itemIndex":-1}],"tax8":0,"tax10":0,"taxFree":0,"serviceCharge":0,"total":0}
+{"storeName":"","date":"","items":[{"name":"","quantity":1,"price":0,"category":"餐飲"}],"discounts":[{"name":"","amount":0,"itemName":""}],"tax8":0,"tax10":0,"taxFree":0,"serviceCharge":0,"total":0}
 
-discounts 的 itemIndex 規則（非常重要）：
+discounts 的 itemName 規則（非常重要）：
 - 判斷方法：看折扣行在收據上的「出現位置」
-  → 若折扣行緊接在某商品行之後（下一行就是折扣，再下一行才是別的商品）→ 這個折扣屬於那個商品，itemIndex 填該商品的索引（0 開始）
+  → 若折扣行緊接在某商品行之後（下一行就是折扣，再下一行才是別的商品）→ itemName 填入上方 items 陣列中該商品的完整 name 值（一字不差，直接複製）
   → 可用金額驗算確認：商品價格 × 折扣率 ≈ 折扣金額（例如 ¥350 × 30% = ¥105）
-- 若是整張收據的折扣（優惠券代碼、點數折抵、全館折扣，出現在所有商品之後）→ itemIndex 填 -1
-- 範例：收據順序「ハムカツ ¥350 → 割引30% -¥105 → 焼鳥 ¥390」→ 割引屬於ハムカツ，itemIndex=1（ハムカツ在 items 第2位，索引1）
+- 若是整張收據的折扣（優惠券代碼、點數折抵、全館折扣，出現在所有商品之後）→ itemName 填 ""
+- 範例：若 items 中有 "丸大食品ハーフベーコン（丸大ハーフベーコン）"，割引30% -¥105 緊接在後 → itemName 填 "丸大食品ハーフベーコン（丸大ハーフベーコン）"
 
 category 只能用以下其中一個（每筆商品獨立判斷）：
 - 餐飲：食物、飲料、便利商店食品、餐廳、咖啡廳、超市食品
@@ -1386,12 +1400,12 @@ function renderScanReview(result) {
   const items = result.items || []
   const discounts = result.discounts || []
 
-  const genDiscounts = discounts.filter(d => (d.itemIndex ?? -1) === -1)
+  const genDiscounts = discounts.filter(d => (d.itemName !== undefined ? d.itemName === '' : (d.itemIndex ?? -1) === -1))
   document.getElementById('review-items').innerHTML = `
     ${items.map((it, i) => {
       const qty = parseInt(it.quantity) || 1
       const tot = (parseFloat(it.price) || 0) * qty
-      const itemDis = discounts.filter(d => d.itemIndex === i)
+      const itemDis = discounts.filter(d => d.itemName !== undefined ? d.itemName === it.name : d.itemIndex === i)
       return `<div class="review-item" id="ri-${i}">
         <div class="review-check checked" onclick="toggleReviewItem(${i})">✓</div>
         <div class="review-name">${esc(it.name)}${qty > 1 ? ` <span style="color:var(--text2)">×${qty}</span>` : ''} <span style="font-size:11px;color:var(--text2)">${esc(it.category)}</span></div>
@@ -1450,13 +1464,6 @@ function confirmScan() {
       .filter(n => !isNaN(n))
   )
 
-  // 建立原始索引 → 新索引的對應表（未勾選的品項被過濾掉後索引會位移）
-  const origToNew = {}
-  let newIdx = 0
-  ;(scanResult.items || []).forEach((_, i) => {
-    if (checkedIndices.has(i)) { origToNew[i] = newIdx++ }
-  })
-
   const items = (scanResult.items || [])
     .filter((_, i) => checkedIndices.has(i))
     .map(it => ({
@@ -1466,11 +1473,13 @@ function confirmScan() {
       category: it.category || '其他',
     }))
 
+  const checkedItemNames = new Set(items.map(it => it.name))
   const discounts = (scanResult.discounts || []).map(d => {
-    const origIdx = d.itemIndex ?? -1
-    const mappedIdx = (origIdx >= 0 && origToNew[origIdx] !== undefined) ? origToNew[origIdx] : -1
-    return { name: d.name || '折扣', amount: parseFloat(d.amount) || 0, itemIndex: mappedIdx }
-  }).filter(d => d.amount > 0)
+    const itemName = d.itemName !== undefined ? d.itemName : ''
+    // 若折扣屬於某品項但該品項未勾選 → 丟棄
+    if (itemName && !checkedItemNames.has(itemName)) return null
+    return { name: d.name || '折扣', amount: parseFloat(d.amount) || 0, itemName }
+  }).filter(d => d && d.amount > 0)
 
   if (items.length === 0) { showToast('請至少勾選一項商品'); return }
 
@@ -1497,24 +1506,35 @@ function confirmScan() {
     _expanded:     false,
   }
 
-  // 重複偵測：同日期 + (金額相同 OR 店名關鍵字重疊) + 品項內容有重疊
+  // 重複偵測：同日期 + 店名/金額 + 品項內容
   const nameKeywords = s => (s || '').toUpperCase().match(/[A-Z0-9぀-鿿]{3,}/g) || []
   const shareKeyword = (a, b) => nameKeywords(a).some(w => b.toUpperCase().includes(w))
-  const itemSimilarity = (a, b) => {
-    const setA = new Set((a.items || []).map(it => (it.name || '').slice(0, 6)))
-    const setB = new Set((b.items || []).map(it => (it.name || '').slice(0, 6)))
-    if (setA.size === 0 && setB.size === 0) return 1
-    if (setA.size === 0 || setB.size === 0) return 0
-    const common = [...setA].filter(n => setB.has(n)).length
-    return common / Math.max(setA.size, setB.size)
+  // 提取品項 key：優先用括號內的日文（穩定），否則用前8字
+  const itemKey = name => {
+    const matches = [...(name || '').matchAll(/[（(]([^）)]+)[）)]/g)]
+    for (const m of matches) {
+      if (/[぀-ヿ一-鿿]/.test(m[1]) && m[1].length >= 3) return m[1].slice(0, 10)
+    }
+    return (name || '').slice(0, 8)
+  }
+  // 品項單價集合（不展開數量，容忍新舊格式差異）
+  const priceSet = e => new Set((e.items || []).map(it => parseFloat(it.price) || 0).filter(p => p > 0))
+  const priceOverlap = (a, b) => {
+    const sA = priceSet(a), sB = priceSet(b)
+    if (!sA.size || !sB.size) return 0
+    const common = [...sA].filter(p => sB.has(p)).length
+    return common / Math.max(sA.size, sB.size)
   }
   const dupExp = expenses.find(e => {
     if (e.date !== exp.date) return false
-    const sameTotal = e.totalAmount === exp.totalAmount
+    if (Math.abs((e.totalAmount || 0) - exp.totalAmount) > 1) return false  // 允許 ±1 四捨五入誤差
+    // 金額相同 → 看店名是否有共同關鍵字
     const sameName = shareKeyword(e.storeName, exp.storeName) || shareKeyword(exp.storeName, e.storeName)
-    if (!sameTotal && !sameName) return false
-    // 店名或金額相符，再看品項相似度是否 >= 40%
-    return itemSimilarity(e, exp) >= 0.4
+    if (sameName) return true
+    // 店名不同 → 需要 3 張以上品項且價格集合交集 ≥ 60%（避免簡單收據誤判）
+    const minItems = Math.min((e.items || []).length, (exp.items || []).length)
+    if (minItems < 3) return false
+    return priceOverlap(e, exp) >= 0.6
   })
 
   if (dupExp) {
